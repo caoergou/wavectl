@@ -37,6 +37,14 @@ wavectl
 
 Use the arrow keys to navigate the menu and `Enter` to select options.
 
+## Language Support
+
+`wavectl` automatically detects your system language. To force a specific language, set the `WAVECTL_LANG` environment variable:
+
+```bash
+WAVECTL_LANG=zh_CN wavectl
+```
+
 ## Development
 
 If you want to contribute to `wavectl`, we recommend using `uv` for dependency management.
@@ -91,6 +99,14 @@ wavectl
 ```
 
 使用方向键浏览菜单，按 `Enter` 键选择选项。
+
+## 语言支持
+
+`wavectl` 会自动检测您的系统语言。如果需要强制使用特定语言，请设置 `WAVECTL_LANG` 环境变量：
+
+```bash
+WAVECTL_LANG=zh_CN wavectl
+```
 
 ## 开发指南
 
