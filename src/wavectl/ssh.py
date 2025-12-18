@@ -24,51 +24,55 @@ def configure_ssh_connections():
 
 def add_ssh_connection():
     # 1. Gather SSH Details
-    connection_name = questionary.text("Enter Connection Name (e.g., Production DB):").ask()
-    if not connection_name:
-        return
+    # We can use an alias or just user@host
 
-    hostname = questionary.text("Enter Hostname or IP:").ask()
+    hostname = questionary.text("Enter Hostname or IP (Required):").ask()
     while not hostname:
          console.print("[red]Hostname is required.[/red]")
-         hostname = questionary.text("Enter Hostname or IP:").ask()
+         hostname = questionary.text("Enter Hostname or IP (Required):").ask()
 
     username = questionary.text("Enter Username:", default="root").ask()
     port = questionary.text("Enter Port:", default="22").ask()
 
     # Optional: Identity File
     use_key = questionary.confirm("Do you use an identity file (private key)?").ask()
-    identity_file = ""
+    identity_file = []
     if use_key:
-        identity_file = questionary.path("Path to private key:", default="~/.ssh/id_rsa").ask()
+        path = questionary.path("Path to private key:", default="~/.ssh/id_rsa").ask()
+        if path:
+            identity_file.append(path)
 
-    # 2. Construct Preset Data
-    # Assuming WaveTerm uses a generic 'term' preset for SSH or specific structure.
-    # Pattern: term:cmd = ssh ...
+    # 2. Construct Data
+    # Key in connections.json is usually "user@hostname" or a custom label.
+    # If we want it to appear in the dropdown as a specific entry, we can key it.
+    # Docs say: "manual typing... will be added to internal config/connections.json file"
+    # Docs example: "myusername@myhost": { "term:theme": ... }
+    # Also "Entirely Defined Internally":
+    # "myusername@myhost" : { "ssh:hostname": "...", "ssh:identityfile": [...] }
 
-    cmd_parts = ["ssh"]
-    if port and port != "22":
-        cmd_parts.extend(["-p", port])
-    if identity_file:
-        cmd_parts.extend(["-i", identity_file])
+    # Let's ask for a display alias (optional)
+    alias = questionary.text("Enter a Display Name (Alias) [Optional]:").ask()
 
-    cmd_parts.append(f"{username}@{hostname}")
+    if alias:
+        connection_key = alias
+    else:
+        connection_key = f"{username}@{hostname}"
+        if port and port != "22":
+            connection_key += f":{port}"
 
-    full_cmd = " ".join(cmd_parts)
-
-    # Sanitize key
-    sanitized_name = connection_name.replace(" ", "-").replace(".", "").lower()
-    preset_key = f"term@ssh-{sanitized_name}"
-
-    preset_data = {
-        "display:name": connection_name,
-        "term:cmd": full_cmd,
-        "term:icon": "server", # heuristic
+    connection_data = {
+        "ssh:hostname": hostname,
+        "ssh:user": username,
     }
+
+    if port and port != "22":
+        connection_data["ssh:port"] = port
+
+    if identity_file:
+        connection_data["ssh:identityfile"] = identity_file
 
     # 3. Save
     cm = ConfigManager()
-    # Storing in term.json as these are likely terminal presets
-    cm.update_preset("term.json", preset_key, preset_data)
+    cm.update_connection(connection_key, connection_data)
 
-    console.print(f"[green]Successfully saved SSH connection '{connection_name}' to ~/.config/waveterm/presets/term.json[/green]")
+    console.print(f"[green]Successfully saved SSH connection '{connection_key}' to ~/.config/waveterm/connections.json[/green]")

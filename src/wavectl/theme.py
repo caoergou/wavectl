@@ -7,36 +7,33 @@ console = Console()
 def configure_theme():
     console.print("[bold green]Configure Theme[/bold green]")
 
-    # Basic themes supported by WaveTerm or standard ones
-    # Assuming we modify "theme" in settings.json
+    # Themes from termthemes.json (default ones)
+    themes = {
+        "Default Dark": "default-dark",
+        "One Dark Pro": "onedarkpro",
+        "Dracula": "dracula",
+        "Monokai": "monokai",
+        "Campbell": "campbell",
+        "Warm Yellow": "warmyellow",
+        "Rose Pine": "rosepine"
+    }
 
-    themes = [
-        "Default (Dark)",
-        "Light",
-        "Dracula",
-        "Solarized Dark",
-        "Go Back"
-    ]
+    choices = list(themes.keys()) + ["Go Back"]
 
     choice = questionary.select(
-        "Select a Theme:",
-        choices=themes
+        "Select a Global Terminal Theme:",
+        choices=choices
     ).ask()
 
     if choice == "Go Back":
         return
 
-    # Map choice to actual value
-    # This is a guess on values. If WaveTerm uses CSS or specific json, I might need to know more.
-    # But for a basic implementation:
-    theme_value = choice.lower().replace(" ", "-").replace("(", "").replace(")", "")
-    if "default" in theme_value:
-        theme_value = "default"
+    theme_value = themes[choice]
 
     cm = ConfigManager()
 
-    # Check if we are modifying a global setting or a preset
-    # Usually themes are global settings.
-    cm.set_config_value("theme", theme_value)
+    # Set global theme in settings.json
+    # Key: term:theme
+    cm.set_config_value("term:theme", theme_value)
 
-    console.print(f"[green]Successfully set theme to '{choice}'[/green]")
+    console.print(f"[green]Successfully set global theme to '{choice}' ({theme_value})[/green]")
