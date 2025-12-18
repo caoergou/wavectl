@@ -10,15 +10,14 @@ class ConfigManager:
         else:
             self.config_dir = Path.home() / ".config" / "waveterm"
 
-        self.presets_dir = self.config_dir / "presets"
         self.settings_file = self.config_dir / "settings.json"
+        self.waveai_file = self.config_dir / "waveai.json"
 
         # Ensure directories exist
         self.ensure_config_dirs()
 
     def ensure_config_dirs(self):
         self.config_dir.mkdir(parents=True, exist_ok=True)
-        self.presets_dir.mkdir(parents=True, exist_ok=True)
 
     def _read_json(self, filepath: Path) -> Dict[str, Any]:
         if not filepath.exists():
@@ -39,21 +38,17 @@ class ConfigManager:
     def save_settings(self, settings: Dict[str, Any]):
         self._write_json(self.settings_file, settings)
 
-    def load_presets(self, filename: str) -> Dict[str, Any]:
-        """Load presets from a specific file in the presets directory."""
-        filepath = self.presets_dir / filename
-        return self._read_json(filepath)
+    def load_waveai(self) -> Dict[str, Any]:
+        return self._read_json(self.waveai_file)
 
-    def save_presets(self, filename: str, presets: Dict[str, Any]):
-        """Save presets to a specific file in the presets directory."""
-        filepath = self.presets_dir / filename
-        self._write_json(filepath, presets)
+    def save_waveai(self, data: Dict[str, Any]):
+        self._write_json(self.waveai_file, data)
 
-    def update_preset(self, filename: str, preset_key: str, preset_data: Dict[str, Any]):
-        """Update or add a single preset in the specified file."""
-        presets = self.load_presets(filename)
-        presets[preset_key] = preset_data
-        self.save_presets(filename, presets)
+    def update_waveai_mode(self, mode_key: str, mode_data: Dict[str, Any]):
+        """Update or add a single AI mode in waveai.json."""
+        modes = self.load_waveai()
+        modes[mode_key] = mode_data
+        self.save_waveai(modes)
 
     def set_config_value(self, key: str, value: Any):
         """Set a value in the main settings.json file."""

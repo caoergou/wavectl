@@ -5,15 +5,15 @@ from .config_manager import ConfigManager
 console = Console()
 
 def configure_ai_settings():
-    console.print("[bold green]Configure AI Settings[/bold green]")
+    console.print("[bold green]Configure AI Modes (waveai.json)[/bold green]")
 
     # 1. Select Provider
     provider = questionary.select(
         "Select AI Provider:",
         choices=[
             "OpenAI",
-            "Anthropic (Claude)",
             "Ollama (Local)",
+            "OpenRouter",
             "Go Back"
         ]
     ).ask()
@@ -21,81 +21,81 @@ def configure_ai_settings():
     if provider == "Go Back":
         return
 
-    # 2. Gather details based on provider
-    api_token = ""
-    model = ""
-    api_type = ""
+    mode_data = {}
+    mode_key = ""
+    display_name = ""
 
     if provider == "OpenAI":
-        api_type = "openai"
-        model = questionary.text("Enter Model Name (e.g., gpt-4, gpt-3.5-turbo):", default="gpt-4").ask()
-        api_token = questionary.password("Enter OpenAI API Key:").ask()
-        preset_prefix = "openai"
+        display_name = questionary.text("Enter Display Name:", default="OpenAI GPT-4o").ask()
+        model = questionary.text("Enter Model Name:", default="gpt-4o").ask()
 
-    elif provider == "Anthropic (Claude)":
-        api_type = "anthropic"
-        model = questionary.text("Enter Model Name (e.g., claude-3-5-sonnet-latest):", default="claude-3-5-sonnet-latest").ask()
-        api_token = questionary.password("Enter Anthropic API Key:").ask()
-        preset_prefix = "claude"
+        # Construct key from model name
+        mode_key = f"openai-{model.replace('.', '').replace(':', '-')}"
+
+        mode_data = {
+            "display:name": display_name,
+            "ai:provider": "openai",
+            "ai:model": model
+        }
+
+        console.print("[yellow]Note: For OpenAI, please ensure you have set the secret OPENAI_KEY using:[/yellow]")
+        console.print("[bold]wsh secret set OPENAI_KEY=sk-xxxxxxxx[/bold]")
 
     elif provider == "Ollama (Local)":
-        # For Ollama, the structure might be slightly different or rely on a compatible endpoint
-        # Based on docs, it usually acts as an openai compatible endpoint or has specific config
-        # Assuming generic setup or verifying docs if needed.
-        # For now, let's treat it as a custom setup or skip specific api_type if not strictly documented for simple "ollama" key
-        # However, the user wants me to implement logic.
-        # Docs example: "ai@ollama-llama": { ... }
-        # Let's assume standard fields.
-        api_type = "openai" # often used for local servers mimicking openai
-        model = questionary.text("Enter Ollama Model Name (e.g., llama2):", default="llama2").ask()
-        api_token = "unused" # Ollama often doesn't need a key
-        preset_prefix = "ollama"
+        display_name = questionary.text("Enter Display Name:", default="Ollama - Llama 3").ask()
+        model = questionary.text("Enter Model Name (e.g., llama3:latest):", default="llama3:latest").ask()
 
-        # Check if user needs to specify a custom base URL
-        custom_url = questionary.confirm("Do you need to specify a custom Base URL? (Default is usually http://localhost:11434/v1)").ask()
-        if custom_url:
-            base_url = questionary.text("Enter Base URL:", default="http://localhost:11434/v1").ask()
-        else:
-            base_url = "http://localhost:11434/v1"
+        mode_key = f"ollama-{model.replace(':', '-')}"
 
-    # 3. Define Preset Name
-    preset_name_input = questionary.text(
-        "Enter a name for this preset (display name):",
-        default=f"{provider} - {model}"
-    ).ask()
+        mode_data = {
+            "display:name": display_name,
+            "ai:apitype": "openai-chat",
+            "ai:model": model,
+            "ai:endpoint": "http://localhost:11434/v1/chat/completions",
+            "ai:apitoken": "ollama"
+        }
 
-    # Generate a unique key for the preset
-    # Standard format: ai@<unique-id>
-    # We'll use a sanitized version of the display name or just a timestamp/random string if needed.
-    # Let's use a sanitized version of the model + provider.
-    sanitized_name = f"{preset_prefix}-{model}".replace(" ", "-").replace(".", "").lower()
-    preset_key = f"ai@{sanitized_name}"
+    elif provider == "OpenRouter":
+        display_name = questionary.text("Enter Display Name:", default="OpenRouter - Model").ask()
+        model = questionary.text("Enter Model Name (e.g., qwen/qwen-2.5-coder-32b-instruct):", default="qwen/qwen-2.5-coder-32b-instruct").ask()
 
-    # 4. Construct the preset data
-    preset_data = {
-        "display:name": preset_name_input,
-        "display:order": 1, # TODO: Logic to auto-increment order?
-        "ai:*": True, # Reset other AI settings
-        "ai:model": model,
-    }
+        # Clean up key
+        clean_model = model.split("/")[-1].replace('.', '').replace(':', '-')
+        mode_key = f"openrouter-{clean_model}"
 
-    if provider != "Ollama (Local)":
-        preset_data["ai:apitype"] = api_type
-        preset_data["ai:apitoken"] = api_token
-    else:
-        # specific for local/ollama if needed
-        preset_data["ai:baseurl"] = base_url
-        preset_data["ai:apitype"] = "openai" # Ollama compatible
-        preset_data["ai:apitoken"] = "ollama" # placeholder
+        mode_data = {
+            "display:name": display_name,
+            "ai:provider": "openrouter",
+            "ai:model": model
+        }
 
-    # 5. Save to Config
+        console.print("[yellow]Note: For OpenRouter, please ensure you have set the secret OPENROUTER_KEY using:[/yellow]")
+        console.print("[bold]wsh secret set OPENROUTER_KEY=sk-xxxxxxxx[/bold]")
+
+        # Ask for capabilities as per docs for OpenRouter
+        # "For OpenRouter, you must manually specify ai:capabilities"
+        capabilities = questionary.checkbox(
+            "Select Capabilities:",
+            choices=["tools", "images", "pdfs"],
+            default=["tools"]
+        ).ask()
+        mode_data["ai:capabilities"] = capabilities
+
+    # Ask for display order
+    try:
+        order = int(questionary.text("Enter Display Order (number):", default="1").ask())
+    except ValueError:
+        order = 1
+    mode_data["display:order"] = order
+
+    # Save to Config
     cm = ConfigManager()
-    cm.update_preset("ai.json", preset_key, preset_data)
+    cm.update_waveai_mode(mode_key, mode_data)
 
-    console.print(f"[green]Successfully saved preset '{preset_name_input}' to ~/.config/waveterm/presets/ai.json[/green]")
+    console.print(f"[green]Successfully saved mode '{mode_key}' to ~/.config/waveterm/waveai.json[/green]")
 
-    # 6. Ask to set as default
-    set_default = questionary.confirm("Do you want to set this as your default AI preset?").ask()
+    # Ask to set as default
+    set_default = questionary.confirm("Do you want to set this as your default AI mode?").ask()
     if set_default:
-        cm.set_config_value("ai:preset", preset_key)
-        console.print(f"[green]Set '{preset_name_input}' as the default AI preset.[/green]")
+        cm.set_config_value("waveai:defaultmode", mode_key)
+        console.print(f"[green]Set '{mode_key}' as the default AI mode.[/green]")
