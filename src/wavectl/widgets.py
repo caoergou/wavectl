@@ -1,11 +1,12 @@
 import questionary
 from rich.console import Console
 from .config_manager import ConfigManager
+from .i18n import t
 
 console = Console()
 
 def configure_widgets():
-    console.print("[bold green]Configure Widgets[/bold green]")
+    console.print(f"[bold green]{t('Configure Widgets')}[/bold green]")
 
     # Default widgets in WaveTerm
     # We want to allow enabling/disabling them.
@@ -27,49 +28,21 @@ def configure_widgets():
     # If key is missing or not null -> Enabled (Checked)
     # If key is present and null -> Disabled (Unchecked)
 
-    initial_checked = []
-    for label, key in default_widgets:
-        if current_widgets_config.get(key) is None:
-            # Note: json.load reads null as None.
-            # But if key is missing, .get returns None.
-            # Wait, if key is missing, it is ENABLED (default).
-            # If key is present and is null (None), it is DISABLED.
-
-            # We need to distinguish between "key missing" and "key is null".
-            if key in current_widgets_config and current_widgets_config[key] is None:
-                # Explicitly disabled
-                pass
-            else:
-                # Enabled
-                initial_checked.append(questionary.Choice(label, value=key, checked=True))
-        else:
-             # If key present and NOT null, it's a custom override, so it's enabled.
-             initial_checked.append(questionary.Choice(label, value=key, checked=True))
-
-    # Add disabled ones as unchecked
-    for label, key in default_widgets:
-        is_enabled = False
-        # check if we already added it
-        for choice in initial_checked:
-            if choice.value == key:
-                is_enabled = True
-                break
-
-        if not is_enabled:
-             initial_checked.append(questionary.Choice(label, value=key, checked=False))
-
-    # Sort them to match default order usually
-    # But questionary preserves order of list.
-    # Let's rebuild the list in order
     final_choices = []
+
     for label, key in default_widgets:
-        # Find the choice object
-        found = next((c for c in initial_checked if c.value == key), None)
-        if found:
-            final_choices.append(found)
+        is_enabled = True
+
+        # We need to distinguish between "key missing" and "key is null".
+        if key in current_widgets_config and current_widgets_config[key] is None:
+            # Explicitly disabled
+            is_enabled = False
+
+        # Create choice with translated label
+        final_choices.append(questionary.Choice(title=t(label), value=key, checked=is_enabled))
 
     selected_keys = questionary.checkbox(
-        "Select active default widgets:",
+        t("Select active default widgets:"),
         choices=final_choices
     ).ask()
 
@@ -89,4 +62,4 @@ def configure_widgets():
             # Set to null in config.
             cm.update_widget(key, None)
 
-    console.print(f"[green]Successfully updated active widgets.[/green]")
+    console.print(f"[green]{t('Successfully updated active widgets.')}[/green]")

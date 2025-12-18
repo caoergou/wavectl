@@ -1,18 +1,19 @@
 import questionary
 from rich.console import Console
 from .config_manager import ConfigManager
+from .i18n import t
 
 console = Console()
 
 def configure_ssh_connections():
-    console.print("[bold green]Configure SSH Connections[/bold green]")
+    console.print(f"[bold green]{t('Configure SSH Connections')}[/bold green]")
 
     while True:
         action = questionary.select(
-            "What would you like to do?",
+            t("What would you like to do?"),
             choices=[
-                "Add New SSH Connection",
-                "Go Back"
+                questionary.Choice(title=t("Add New SSH Connection"), value="Add New SSH Connection"),
+                questionary.Choice(title=t("Go Back"), value="Go Back")
             ]
         ).ask()
 
@@ -26,19 +27,19 @@ def add_ssh_connection():
     # 1. Gather SSH Details
     # We can use an alias or just user@host
 
-    hostname = questionary.text("Enter Hostname or IP (Required):").ask()
+    hostname = questionary.text(t("Enter Hostname or IP (Required):")).ask()
     while not hostname:
-         console.print("[red]Hostname is required.[/red]")
-         hostname = questionary.text("Enter Hostname or IP (Required):").ask()
+         console.print(f"[red]{t('Hostname is required.')}[/red]")
+         hostname = questionary.text(t("Enter Hostname or IP (Required):")).ask()
 
-    username = questionary.text("Enter Username:", default="root").ask()
-    port = questionary.text("Enter Port:", default="22").ask()
+    username = questionary.text(t("Enter Username:"), default="root").ask()
+    port = questionary.text(t("Enter Port:"), default="22").ask()
 
     # Optional: Identity File
-    use_key = questionary.confirm("Do you use an identity file (private key)?").ask()
+    use_key = questionary.confirm(t("Do you use an identity file (private key)?")).ask()
     identity_file = []
     if use_key:
-        path = questionary.path("Path to private key:", default="~/.ssh/id_rsa").ask()
+        path = questionary.path(t("Path to private key:"), default="~/.ssh/id_rsa").ask()
         if path:
             identity_file.append(path)
 
@@ -51,7 +52,7 @@ def add_ssh_connection():
     # "myusername@myhost" : { "ssh:hostname": "...", "ssh:identityfile": [...] }
 
     # Let's ask for a display alias (optional)
-    alias = questionary.text("Enter a Display Name (Alias) [Optional]:").ask()
+    alias = questionary.text(t("Enter a Display Name (Alias) [Optional]:")).ask()
 
     if alias:
         connection_key = alias
@@ -75,4 +76,4 @@ def add_ssh_connection():
     cm = ConfigManager()
     cm.update_connection(connection_key, connection_data)
 
-    console.print(f"[green]Successfully saved SSH connection '{connection_key}' to ~/.config/waveterm/connections.json[/green]")
+    console.print(f"[green]{t('Successfully saved SSH connection \'{connection_key}\' to ~/.config/waveterm/connections.json', connection_key=connection_key)}[/green]")
