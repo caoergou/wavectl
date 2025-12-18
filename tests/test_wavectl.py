@@ -5,6 +5,7 @@ from pathlib import Path
 from wavectl.config_manager import ConfigManager
 from wavectl.ai import configure_ai_settings
 from unittest.mock import patch
+from tests.schema_validators import ConfigValidator
 
 def test_config_manager_creation(tmp_path):
     # Setup mock config dir
@@ -19,25 +20,32 @@ def test_save_and_load_settings(tmp_path):
     config_dir = tmp_path / "waveterm"
     cm = ConfigManager(config_dir=str(config_dir))
 
-    settings = {"theme": "dark"}
+    settings = {"term:theme": "dark"} # Updated to use valid key
     cm.save_settings(settings)
 
     loaded = cm.load_settings()
     assert loaded == settings
     assert (config_dir / "settings.json").exists()
 
+    # Validate
+    ConfigValidator.validate("settings.json", loaded)
+
 def test_update_preset(tmp_path):
     config_dir = tmp_path / "waveterm"
     cm = ConfigManager(config_dir=str(config_dir))
 
-    preset_key = "ai@test"
-    preset_data = {"display:name": "Test Preset"}
+    # Using a valid bg preset for test since ai presets are deprecated/different structure
+    preset_key = "bg@test"
+    preset_data = {"display:name": "Test Preset", "bg": "red"}
 
-    cm.update_preset("ai.json", preset_key, preset_data)
+    cm.update_preset("presets.json", preset_key, preset_data)
 
-    presets = cm.load_presets("ai.json")
+    presets = cm.load_presets("presets.json")
     assert presets[preset_key] == preset_data
-    assert (config_dir / "presets" / "ai.json").exists()
+    assert (config_dir / "presets" / "presets.json").exists()
+
+    # Validate
+    ConfigValidator.validate("presets.json", presets)
 
 @patch('wavectl.ai.ConfigManager')
 @patch('wavectl.ai.questionary.select')
@@ -45,6 +53,9 @@ def test_update_preset(tmp_path):
 @patch('wavectl.ai.questionary.password')
 @patch('wavectl.ai.questionary.confirm')
 def test_configure_ai_settings_openai(mock_confirm, mock_password, mock_text, mock_select, MockConfigManager, tmp_path):
+    # This test verifies the LOGIC of configure_ai_settings, but we also want to verify the SCHEMA it produces.
+    # Since it uses a MockConfigManager, it doesn't write to disk. We intercept the call.
+
     # Setup mocks for user input
     # Flow: Select Provider -> OpenAI -> Model -> Key -> Preset Name -> Confirm Default
 
@@ -65,16 +76,23 @@ def test_configure_ai_settings_openai(mock_confirm, mock_password, mock_text, mo
     configure_ai_settings()
 
     # Verify ConfigManager interactions
-    # 1. update_preset should be called
-    mock_cm_instance.update_preset.assert_called_once()
-    args, _ = mock_cm_instance.update_preset.call_args
-    filename, key, data = args
+    # 1. update_waveai_mode should be called
+    mock_cm_instance.update_waveai_mode.assert_called_once()
+    args, _ = mock_cm_instance.update_waveai_mode.call_args
+    key, data = args
 
-    assert filename == "ai.json"
-    assert "ai@openai-gpt-4o" in key # basic check on key generation logic
-    assert data["ai:apitype"] == "openai"
+    # Verify the keys are modern (no "ai@" prefix for mode key in waveai.json, though logic used sanitized_name)
+    assert key == "openai-gpt-4o"
+
+    # Check data content
+    assert data["ai:provider"] == "openai"
     assert data["ai:model"] == "gpt-4o"
     assert data["ai:apitoken"] == "sk-test-key"
 
+    # Validate against schema
+    simulation_waveai = {key: data}
+    ConfigValidator.validate("waveai.json", simulation_waveai)
+
     # 2. set_config_value should be called (since we said yes to default)
-    mock_cm_instance.set_config_value.assert_called_with("ai:preset", key)
+    # Modern key is waveai:defaultmode
+    mock_cm_instance.set_config_value.assert_called_with("waveai:defaultmode", key)

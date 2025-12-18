@@ -20,6 +20,22 @@ class ConfigManager:
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.presets_dir.mkdir(parents=True, exist_ok=True)
 
+    def load_waveai(self) -> Dict[str, Any]:
+        """Load AI modes from waveai.json."""
+        filepath = self.config_dir / "waveai.json"
+        return self._read_json(filepath)
+
+    def save_waveai(self, modes: Dict[str, Any]):
+        """Save AI modes to waveai.json."""
+        filepath = self.config_dir / "waveai.json"
+        self._write_json(filepath, modes)
+
+    def update_waveai_mode(self, mode_key: str, mode_data: Dict[str, Any]):
+        """Update or add a single AI mode in waveai.json."""
+        modes = self.load_waveai()
+        modes[mode_key] = mode_data
+        self.save_waveai(modes)
+
     def _read_json(self, filepath: Path) -> Dict[str, Any]:
         if not filepath.exists():
             return {}
