@@ -12,6 +12,8 @@ class ConfigManager:
 
         self.presets_dir = self.config_dir / "presets"
         self.settings_file = self.config_dir / "settings.json"
+        self.connections_file = self.config_dir / "connections.json"
+        self.widgets_file = self.config_dir / "widgets.json"
 
         # Ensure directories exist
         self.ensure_config_dirs()
@@ -60,3 +62,39 @@ class ConfigManager:
         settings = self.load_settings()
         settings[key] = value
         self.save_settings(settings)
+
+    def load_connections(self) -> Dict[str, Any]:
+        return self._read_json(self.connections_file)
+
+    def save_connections(self, connections: Dict[str, Any]):
+        self._write_json(self.connections_file, connections)
+
+    def update_connection(self, key: str, data: Dict[str, Any]):
+        connections = self.load_connections()
+        connections[key] = data
+        self.save_connections(connections)
+
+    def load_widgets(self) -> Dict[str, Any]:
+        return self._read_json(self.widgets_file)
+
+    def save_widgets(self, widgets: Dict[str, Any]):
+        self._write_json(self.widgets_file, widgets)
+
+    def update_widget(self, key: str, data: Any):
+        """Update a widget configuration. set data to None (null) to delete/hide default."""
+        widgets = self.load_widgets()
+        if data is None:
+             # In WaveTerm, setting a default widget key to null hides it.
+             # But if we want to 'reset' a custom widget, we might delete key?
+             # For overriding defaults: set key to null.
+             widgets[key] = None
+        else:
+             widgets[key] = data
+        self.save_widgets(widgets)
+
+    def remove_widget_override(self, key: str):
+        """Remove an entry from widgets.json (restoring default behavior if it was an override)."""
+        widgets = self.load_widgets()
+        if key in widgets:
+            del widgets[key]
+            self.save_widgets(widgets)

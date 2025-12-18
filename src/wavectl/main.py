@@ -2,6 +2,9 @@ import typer
 import questionary
 from rich.console import Console
 from .ai import configure_ai_settings
+from .ssh import configure_ssh_connections
+from .theme import configure_theme
+from .widgets import configure_widgets
 
 app = typer.Typer()
 console = Console()
@@ -20,8 +23,8 @@ def main():
             choices=[
                 "AI Settings",
                 "SSH Connections",
-                "Themes (Coming Soon)",
-                "Widgets (Coming Soon)",
+                "Themes",
+                "Widgets",
                 questionary.Separator(),
                 "Exit"
             ]
@@ -33,7 +36,11 @@ def main():
         elif choice == "AI Settings":
             configure_ai_settings()
         elif choice == "SSH Connections":
-            console.print("[yellow]SSH Connections module is under construction.[/yellow]")
+            configure_ssh_connections()
+        elif choice == "Themes":
+            configure_theme()
+        elif choice == "Widgets":
+            configure_widgets()
         else:
             console.print(f"[yellow]{choice} module is under construction.[/yellow]")
 
