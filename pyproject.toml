@@ -28,3 +28,8 @@ wavectl = "wavectl.main:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/wavectl"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

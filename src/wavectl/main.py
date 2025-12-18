@@ -1,6 +1,7 @@
 import typer
 import questionary
 from rich.console import Console
+from .ai import configure_ai_settings
 
 app = typer.Typer()
 console = Console()
@@ -30,7 +31,7 @@ def main():
             console.print("Goodbye!")
             break
         elif choice == "AI Settings":
-            console.print("[yellow]AI Settings module is under construction.[/yellow]")
+            configure_ai_settings()
         elif choice == "SSH Connections":
             console.print("[yellow]SSH Connections module is under construction.[/yellow]")
         else:
