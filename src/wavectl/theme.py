@@ -1,11 +1,12 @@
 import questionary
 from rich.console import Console
 from .config_manager import ConfigManager
+from .i18n import t
 
 console = Console()
 
 def configure_theme():
-    console.print("[bold green]Configure Theme[/bold green]")
+    console.print(f"[bold green]{t('Configure Theme')}[/bold green]")
 
     # Themes from termthemes.json (default ones)
     themes = {
@@ -18,10 +19,11 @@ def configure_theme():
         "Rose Pine": "rosepine"
     }
 
-    choices = list(themes.keys()) + ["Go Back"]
+    choices = [questionary.Choice(title=t(k), value=k) for k in themes.keys()]
+    choices.append(questionary.Choice(title=t("Go Back"), value="Go Back"))
 
     choice = questionary.select(
-        "Select a Global Terminal Theme:",
+        t("Select a Global Terminal Theme:"),
         choices=choices
     ).ask()
 
@@ -36,4 +38,4 @@ def configure_theme():
     # Key: term:theme
     cm.set_config_value("term:theme", theme_value)
 
-    console.print(f"[green]Successfully set global theme to '{choice}' ({theme_value})[/green]")
+    console.print(f"[green]{t('Successfully set global theme to \'{choice}\' ({theme_value})', choice=choice, theme_value=theme_value)}[/green]")

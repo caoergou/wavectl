@@ -1,20 +1,21 @@
 import questionary
 from rich.console import Console
 from .config_manager import ConfigManager
+from .i18n import t
 
 console = Console()
 
 def configure_ai_settings():
-    console.print("[bold green]Configure AI Settings[/bold green]")
+    console.print(f"[bold green]{t('Configure AI Settings')}[/bold green]")
 
     # 1. Select Provider
     provider = questionary.select(
-        "Select AI Provider:",
+        t("Select AI Provider:"),
         choices=[
-            "OpenAI",
-            "Anthropic (Claude)",
-            "Ollama (Local)",
-            "Go Back"
+            questionary.Choice(title=t("OpenAI"), value="OpenAI"),
+            questionary.Choice(title=t("Anthropic (Claude)"), value="Anthropic (Claude)"),
+            questionary.Choice(title=t("Ollama (Local)"), value="Ollama (Local)"),
+            questionary.Choice(title=t("Go Back"), value="Go Back")
         ]
     ).ask()
 
@@ -28,14 +29,14 @@ def configure_ai_settings():
 
     if provider == "OpenAI":
         api_type = "openai"
-        model = questionary.text("Enter Model Name (e.g., gpt-4, gpt-3.5-turbo):", default="gpt-4").ask()
-        api_token = questionary.password("Enter OpenAI API Key:").ask()
+        model = questionary.text(t("Enter Model Name (e.g., gpt-4, gpt-3.5-turbo):"), default="gpt-4").ask()
+        api_token = questionary.password(t("Enter OpenAI API Key:")).ask()
         preset_prefix = "openai"
 
     elif provider == "Anthropic (Claude)":
         api_type = "anthropic"
-        model = questionary.text("Enter Model Name (e.g., claude-3-5-sonnet-latest):", default="claude-3-5-sonnet-latest").ask()
-        api_token = questionary.password("Enter Anthropic API Key:").ask()
+        model = questionary.text(t("Enter Model Name (e.g., claude-3-5-sonnet-latest):"), default="claude-3-5-sonnet-latest").ask()
+        api_token = questionary.password(t("Enter Anthropic API Key:")).ask()
         preset_prefix = "claude"
 
     elif provider == "Ollama (Local)":
@@ -47,20 +48,20 @@ def configure_ai_settings():
         # Docs example: "ai@ollama-llama": { ... }
         # Let's assume standard fields.
         api_type = "openai" # often used for local servers mimicking openai
-        model = questionary.text("Enter Ollama Model Name (e.g., llama2):", default="llama2").ask()
+        model = questionary.text(t("Enter Ollama Model Name (e.g., llama2):"), default="llama2").ask()
         api_token = "unused" # Ollama often doesn't need a key
         preset_prefix = "ollama"
 
         # Check if user needs to specify a custom base URL
-        custom_url = questionary.confirm("Do you need to specify a custom Base URL? (Default is usually http://localhost:11434/v1)").ask()
+        custom_url = questionary.confirm(t("Do you need to specify a custom Base URL? (Default is usually http://localhost:11434/v1)")).ask()
         if custom_url:
-            base_url = questionary.text("Enter Base URL:", default="http://localhost:11434/v1").ask()
+            base_url = questionary.text(t("Enter Base URL:"), default="http://localhost:11434/v1").ask()
         else:
             base_url = "http://localhost:11434/v1"
 
     # 3. Define Preset Name
     preset_name_input = questionary.text(
-        "Enter a name for this preset (display name):",
+        t("Enter a name for this preset (display name):"),
         default=f"{provider} - {model}"
     ).ask()
 
@@ -117,7 +118,7 @@ def configure_ai_settings():
         mode_data["ai:apitype"] = "openai-chat" # Assumption
         mode_data["ai:apitoken"] = api_token
         # Verify endpoint?
-        # console.print("[yellow]Warning: Direct Anthropic support requires an OpenAI compatible endpoint.[/yellow]")
+        # console.print(f"[yellow]{t('Warning: Direct Anthropic support requires an OpenAI compatible endpoint.')}[/yellow]")
 
     elif provider == "Ollama (Local)":
         # "ai:provider" is not "ollama" in the docs list (openai, openrouter, google, azure, custom).
@@ -134,10 +135,10 @@ def configure_ai_settings():
     cm = ConfigManager()
     cm.update_waveai_mode(mode_key, mode_data)
 
-    console.print(f"[green]Successfully saved AI mode '{preset_name_input}' to ~/.config/waveterm/waveai.json[/green]")
+    console.print(f"[green]{t('Successfully saved AI mode \'{preset_name_input}\' to ~/.config/waveterm/waveai.json', preset_name_input=preset_name_input)}[/green]")
 
     # 6. Ask to set as default
-    set_default = questionary.confirm("Do you want to set this as your default AI mode?").ask()
+    set_default = questionary.confirm(t("Do you want to set this as your default AI mode?")).ask()
     if set_default:
         cm.set_config_value("waveai:defaultmode", mode_key)
-        console.print(f"[green]Set '{preset_name_input}' (key: {mode_key}) as the default AI mode.[/green]")
+        console.print(f"[green]{t('Set \'{preset_name_input}\' (key: {mode_key}) as the default AI mode.', preset_name_input=preset_name_input, mode_key=mode_key)}[/green]")
