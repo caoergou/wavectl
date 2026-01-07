@@ -13,15 +13,27 @@ def configure_theme():
             t("What would you like to do?"),
             choices=[
                 questionary.Choice(t("Set Global Terminal Theme"), value="global"),
+                questionary.Choice(t("Set Terminal Font Size"), value="font_size"),
+                questionary.Choice(t("Set Terminal Font Family"), value="font_family"),
+                questionary.Choice(t("Set Default Tab Theme"), value="tab_preset"),
+                questionary.Choice(t("Toggle Help Widget"), value="help_widget"),
                 questionary.Choice(t("Create Background Preset"), value="create_preset"),
                 questionary.Choice(t("Go Back"), value="back")
             ]
         ).ask()
 
-        if choice == "back":
+        if choice is None or choice == "back":
             break
         elif choice == "global":
             _configure_global_theme()
+        elif choice == "font_size":
+            _configure_font_size()
+        elif choice == "font_family":
+            _configure_font_family()
+        elif choice == "tab_preset":
+            _configure_tab_preset()
+        elif choice == "help_widget":
+            _toggle_help_widget()
         elif choice == "create_preset":
             _create_background_preset_wizard()
 
@@ -45,7 +57,7 @@ def _configure_global_theme():
         choices=choices
     ).ask()
 
-    if choice == "Go Back":
+    if not choice or choice == "Go Back":
         return
 
     theme_value = themes[choice]
@@ -57,6 +69,57 @@ def _configure_global_theme():
     cm.set_config_value("term:theme", theme_value)
 
     console.print(f"[green]{t('Successfully set global theme to \'{choice}\' ({theme_value})', choice=choice, theme_value=theme_value)}[/green]")
+
+def _configure_font_size():
+    size_str = questionary.text(t("Enter Font Size (e.g. 14):")).ask()
+    if not size_str:
+        return
+
+    try:
+        size = int(size_str)
+        cm = ConfigManager()
+        cm.set_config_value("term:fontsize", size)
+        console.print(f"[green]{t('Successfully set font size to {size}', size=size)}[/green]")
+    except ValueError:
+        console.print(f"[red]{t('Invalid font size. Please enter a number.')}[/red]")
+
+def _configure_font_family():
+    family = questionary.text(t("Enter Font Family (e.g. Fira Code):")).ask()
+    if not family:
+        return
+
+    cm = ConfigManager()
+    cm.set_config_value("term:fontfamily", family)
+    console.print(f"[green]{t('Successfully set font family to \'{family}\'', family=family)}[/green]")
+
+def _configure_tab_preset():
+    preset = questionary.text(t("Enter Tab Preset Key (e.g. bg@myred):")).ask()
+    if not preset:
+        return
+
+    cm = ConfigManager()
+    cm.set_config_value("tab:preset", preset)
+    console.print(f"[green]{t('Successfully set default tab preset to \'{preset}\'', preset=preset)}[/green]")
+
+def _toggle_help_widget():
+    choice = questionary.select(
+        t("Help Widget Visibility:"),
+        choices=[
+            questionary.Choice(t("Show"), value="show"),
+            questionary.Choice(t("Hide"), value="hide")
+        ]
+    ).ask()
+
+    if not choice:
+        return
+
+    cm = ConfigManager()
+    if choice == "show":
+        cm.set_config_value("widget:showhelp", True)
+        console.print(f"[green]{t('Help widget enabled.')}[/green]")
+    elif choice == "hide":
+        cm.set_config_value("widget:showhelp", False)
+        console.print(f"[green]{t('Help widget disabled.')}[/green]")
 
 def _create_background_preset_wizard():
     console.print(f"[bold]{t('Create Background Preset')}[/bold]")
@@ -79,6 +142,9 @@ def _create_background_preset_wizard():
         ]
     ).ask()
 
+    if not bg_type:
+        return
+
     bg_value = ""
     if bg_type == "Solid Color":
         bg_value = questionary.text(t("Color (hex/rgba, e.g. #ff0000):")).ask()
@@ -87,9 +153,11 @@ def _create_background_preset_wizard():
     elif bg_type == "Image":
         path = questionary.text(t("Image Path (absolute or starting with ~):")).ask()
         if path:
-            # Escape single quotes in path to ensure valid CSS URL syntax
-            escaped_path = path.replace("'", "\\'")
-            bg_value = f"url('{escaped_path}') no-repeat center/cover"
+            # Escape single quotes and backslashes for CSS URL compatibility
+            # Replace backslashes with forward slashes is generally safer for CSS URLs across platforms
+            # And escape single quotes
+            safe_path = path.replace("\\", "/").replace("'", "\\'")
+            bg_value = f"url('{safe_path}') no-repeat center/cover"
 
     opacity_str = questionary.text(t("Opacity (0.0 - 1.0, default 0.5):"), default="0.5").ask()
     try:
