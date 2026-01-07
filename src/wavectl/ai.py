@@ -35,8 +35,8 @@ def configure_ai_settings():
     model = ""
 
     if provider == "openai":
-        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-4o").ask()
-        model = questionary.text(t("Enter Model Name:"), default="gpt-4o").ask()
+        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-5.2").ask()
+        model = questionary.text(t("Enter Model Name:"), default="gpt-5.2").ask()
 
         mode_data["ai:provider"] = "openai"
         mode_data["ai:model"] = model
@@ -53,7 +53,7 @@ def configure_ai_settings():
 
     elif provider == "openrouter":
         display_name = questionary.text(t("Enter Display Name:"), default="OpenRouter").ask()
-        model = questionary.text(t("Enter Model Name (e.g. qwen/qwen-2.5-coder-32b-instruct):"), default="qwen/qwen-2.5-coder-32b-instruct").ask()
+        model = questionary.text(t("Enter Model Name (e.g. anthropic/claude-sonnet-4.5):"), default="anthropic/claude-sonnet-4.5").ask()
 
         mode_data["ai:provider"] = "openrouter"
         mode_data["ai:model"] = model
@@ -73,7 +73,7 @@ def configure_ai_settings():
 
     elif provider == "google":
         display_name = questionary.text(t("Enter Display Name:"), default="Google Gemini").ask()
-        model = questionary.text(t("Enter Model Name:"), default="gemini-pro").ask()
+        model = questionary.text(t("Enter Model Name:"), default="gemini-3-pro-preview").ask()
 
         mode_data["ai:provider"] = "google"
         mode_data["ai:model"] = model
