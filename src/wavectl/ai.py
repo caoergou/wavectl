@@ -2,6 +2,7 @@ import questionary
 from rich.console import Console
 from .config_manager import ConfigManager
 from .i18n import t
+import re
 
 console = Console()
 
@@ -12,133 +13,233 @@ def configure_ai_settings():
     provider = questionary.select(
         t("Select AI Provider:"),
         choices=[
-            questionary.Choice(title=t("OpenAI"), value="OpenAI"),
-            questionary.Choice(title=t("Anthropic (Claude)"), value="Anthropic (Claude)"),
-            questionary.Choice(title=t("Ollama (Local)"), value="Ollama (Local)"),
-            questionary.Choice(title=t("Go Back"), value="Go Back")
+            questionary.Choice(title=t("OpenAI"), value="openai"),
+            questionary.Choice(title=t("OpenRouter"), value="openrouter"),
+            questionary.Choice(title=t("Google (Gemini)"), value="google"),
+            questionary.Choice(title=t("Azure OpenAI"), value="azure"),
+            questionary.Choice(title=t("Azure OpenAI (Legacy)"), value="azure-legacy"),
+            questionary.Choice(title=t("Custom / Local (Ollama, etc.)"), value="custom"),
+            questionary.Separator(),
+            questionary.Choice(title=t("Go Back"), value="back")
         ]
     ).ask()
 
-    if provider == "Go Back":
+    if provider == "back":
         return
 
-    # 2. Gather details based on provider
-    api_token = ""
+    # 2. Gather Provider Specific Details
+    mode_data = {}
+
+    # Common fields that might be asked later or derived
+    display_name = ""
     model = ""
-    api_type = ""
 
-    if provider == "OpenAI":
-        api_type = "openai"
-        model = questionary.text(t("Enter Model Name (e.g., gpt-4, gpt-3.5-turbo):"), default="gpt-4").ask()
-        api_token = questionary.password(t("Enter OpenAI API Key:")).ask()
-        preset_prefix = "openai"
+    if provider == "openai":
+        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-5.2").ask()
+        model = questionary.text(t("Enter Model Name:"), default="gpt-5.2").ask()
 
-    elif provider == "Anthropic (Claude)":
-        api_type = "anthropic"
-        model = questionary.text(t("Enter Model Name (e.g., claude-3-5-sonnet-latest):"), default="claude-3-5-sonnet-latest").ask()
-        api_token = questionary.password(t("Enter Anthropic API Key:")).ask()
-        preset_prefix = "claude"
-
-    elif provider == "Ollama (Local)":
-        # For Ollama, the structure might be slightly different or rely on a compatible endpoint
-        # Based on docs, it usually acts as an openai compatible endpoint or has specific config
-        # Assuming generic setup or verifying docs if needed.
-        # For now, let's treat it as a custom setup or skip specific api_type if not strictly documented for simple "ollama" key
-        # However, the user wants me to implement logic.
-        # Docs example: "ai@ollama-llama": { ... }
-        # Let's assume standard fields.
-        api_type = "openai" # often used for local servers mimicking openai
-        model = questionary.text(t("Enter Ollama Model Name (e.g., llama2):"), default="llama2").ask()
-        api_token = "unused" # Ollama often doesn't need a key
-        preset_prefix = "ollama"
-
-        # Check if user needs to specify a custom base URL
-        custom_url = questionary.confirm(t("Do you need to specify a custom Base URL? (Default is usually http://localhost:11434/v1)")).ask()
-        if custom_url:
-            base_url = questionary.text(t("Enter Base URL:"), default="http://localhost:11434/v1").ask()
-        else:
-            base_url = "http://localhost:11434/v1"
-
-    # 3. Define Preset Name
-    preset_name_input = questionary.text(
-        t("Enter a name for this preset (display name):"),
-        default=f"{provider} - {model}"
-    ).ask()
-
-    # Generate a unique key for the preset
-    # Standard format: ai@<unique-id>
-    # We'll use a sanitized version of the display name or just a timestamp/random string if needed.
-    # Let's use a sanitized version of the model + provider.
-    sanitized_name = f"{preset_prefix}-{model}".replace(" ", "-").replace(".", "").lower()
-    preset_key = f"ai@{sanitized_name}"
-
-    # 4. Construct the waveai.json mode data (Modern Format)
-    # Ref: https://docs.waveterm.dev/waveai-modes#provider-based-configuration
-
-    # The key used in waveai.json
-    # It should not have 'ai@' prefix, just a simple ID.
-    mode_key = sanitized_name
-
-    mode_data = {
-        "display:name": preset_name_input,
-        "display:order": 1, # TODO: Logic to auto-increment order?
-        "ai:model": model,
-    }
-
-    if provider == "OpenAI":
-        # Provider-based config simplifies things
         mode_data["ai:provider"] = "openai"
-        # We handle the token by storing it?
-        # Ideally we should use secrets as per docs, but for now we'll put it in ai:apitoken or let provider handle it if secret is set.
-        # But the user entered it here.
-        # Docs say: "The provider automatically sets... ai:apitokensecretname to OPENAI_KEY".
-        # If we want to support direct token input without secrets (legacy-ish but supported for custom/local), we use "ai:apitoken".
-        # However, for "openai" provider, it expects the secret.
-        # Let's try to set "ai:apitoken" directly if that's what we have, OR warn user about secrets.
-        # But wait, docs say "ai:apitoken: No API key/token (not recommended - use secrets instead)". It IS supported.
-        mode_data["ai:apitoken"] = api_token
+        mode_data["ai:model"] = model
 
-    elif provider == "Anthropic (Claude)":
-        # There is no 'anthropic' provider listed in "Supported Providers" in the docs I read (openai, openrouter, google, azure, custom).
-        # So we must use "custom" provider or manually configure endpoints.
-        # Anthropic uses a different API format. WaveTerm supports "openai-chat", "openai-responses", "google-gemini".
-        # Does WaveTerm natively support Anthropic API format?
-        # Looking at docs: "ai:apitype... openai-chat, openai-responses, google-gemini".
-        # So Anthropic likely needs an adapter or "openrouter" provider if using OpenRouter.
-        # If direct Anthropic, it might not be supported directly unless via a proxy that speaks OpenAI protocol.
-        # For this exercise, I will assume "custom" and user might need a proxy, OR I should switch to OpenRouter for Claude.
-        # Let's fallback to "custom" but we might need to warn.
-        # Actually, let's treat it as "custom" with OpenAI compatible endpoint if they have one (they don't natively).
-        # Use case: OpenRouter is better for Claude.
-        # I will change the logic to default to OpenRouter for Claude if that's acceptable, OR just map it to "custom" and leave endpoint blank/ask user.
-        # For safety and "correct parsing", I'll stick to what I know works: OpenAI and Ollama.
-        # The prompt code had "Anthropic (Claude)" but I didn't see it in my initial read of the docs.
-        # I'll keep it as "custom" for now to avoid breaking existing logic flow, but minimal config.
+        # Secrets handling
+        console.print(f"[yellow]{t('Note: OpenAI provider uses the secret named OPENAI_KEY.')}[/yellow]")
+        has_key = questionary.confirm(t("Do you have this secret set?")).ask()
+        if not has_key:
+            api_key = questionary.password(t("Enter your OpenAI API Key (to display setup command):")).ask()
+            if api_key:
+                console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
+                console.print(f"wsh secret set OPENAI_KEY={api_key}")
+                console.print(t("(You can do this after finishing this configuration)"))
+
+    elif provider == "openrouter":
+        display_name = questionary.text(t("Enter Display Name:"), default="OpenRouter").ask()
+        model = questionary.text(t("Enter Model Name (e.g. anthropic/claude-sonnet-4.5):"), default="anthropic/claude-sonnet-4.5").ask()
+
+        mode_data["ai:provider"] = "openrouter"
+        mode_data["ai:model"] = model
+
+        # Secrets handling
+        console.print(f"[yellow]{t('Note: OpenRouter provider uses the secret named OPENROUTER_KEY.')}[/yellow]")
+        has_key = questionary.confirm(t("Do you have this secret set?")).ask()
+        if not has_key:
+            api_key = questionary.password(t("Enter your OpenRouter API Key (to display setup command):")).ask()
+            if api_key:
+                console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
+                console.print(f"wsh secret set OPENROUTER_KEY={api_key}")
+
+        # Capabilities
+        # Docs say OpenRouter needs manual capabilities
+        mode_data["ai:capabilities"] = _ask_capabilities()
+
+    elif provider == "google":
+        display_name = questionary.text(t("Enter Display Name:"), default="Google Gemini").ask()
+        model = questionary.text(t("Enter Model Name:"), default="gemini-3-pro-preview").ask()
+
+        mode_data["ai:provider"] = "google"
+        mode_data["ai:model"] = model
+
+        # Secrets handling
+        console.print(f"[yellow]{t('Note: Google provider uses the secret named GOOGLE_AI_KEY.')}[/yellow]")
+        has_key = questionary.confirm(t("Do you have this secret set?")).ask()
+        if not has_key:
+            api_key = questionary.password(t("Enter your Google AI API Key (to display setup command):")).ask()
+            if api_key:
+                console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
+                console.print(f"wsh secret set GOOGLE_AI_KEY={api_key}")
+
+    elif provider == "azure":
+        display_name = questionary.text(t("Enter Display Name:"), default="Azure OpenAI").ask()
+        resource_name = questionary.text(t("Enter Azure Resource Name:")).ask()
+        model = questionary.text(t("Enter Model Name:")).ask()
+
+        mode_data["ai:provider"] = "azure"
+        mode_data["ai:model"] = model
+        mode_data["ai:azureresourcename"] = resource_name
+
+        # Secrets handling
+        console.print(f"[yellow]{t('Note: Azure provider uses the secret named AZURE_OPENAI_KEY.')}[/yellow]")
+        has_key = questionary.confirm(t("Do you have this secret set?")).ask()
+        if not has_key:
+            api_key = questionary.password(t("Enter your Azure OpenAI API Key (to display setup command):")).ask()
+            if api_key:
+                console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
+                console.print(f"wsh secret set AZURE_OPENAI_KEY={api_key}")
+
+        # Capabilities
+        mode_data["ai:capabilities"] = _ask_capabilities()
+
+    elif provider == "azure-legacy":
+        display_name = questionary.text(t("Enter Display Name:"), default="Azure OpenAI (Legacy)").ask()
+        resource_name = questionary.text(t("Enter Azure Resource Name:")).ask()
+        deployment_name = questionary.text(t("Enter Azure Deployment Name:")).ask()
+
+        mode_data["ai:provider"] = "azure-legacy"
+        mode_data["ai:azureresourcename"] = resource_name
+        mode_data["ai:azuredeployment"] = deployment_name
+
+        # Optional: API Version
+        api_version = questionary.text(t("Enter API Version (optional, default: 2025-04-01-preview):"), default="").ask()
+        if api_version:
+             mode_data["ai:azureapiversion"] = api_version
+
+        # Secrets handling (Same as Azure modern?)
+        # Docs say: "ai:apitokensecretname to AZURE_OPENAI_KEY" for azure, but doesn't explicitly mention it for azure-legacy in the summary list,
+        # but assumes same secret usually.
+        # Actually, legacy might need manual secret or same one.
+        # Docs example for Legacy doesn't show secret config explicitly in the "The provider automatically sets..." section like modern does,
+        # BUT checking "Supported Providers" section:
+        # "azure-legacy - Azure OpenAI Service (legacy deployment API)"
+        # It says "The provider automatically constructs the full endpoint URL and sets the API version...".
+        # It doesn't explicitly say it sets the secret name.
+        # However, it's safer to ask or assume manual config if not specified.
+        # Wait, if provider is used, it usually sets defaults.
+        # Let's assume it uses AZURE_OPENAI_KEY or ask user if they want to specify a secret name.
+        # But for simplicity, let's look at "Full Configuration" reference.
+        # "ai:apitokensecretname" can be set manually.
+
+        console.print(f"[yellow]{t('Note: For Azure Legacy, you should store your API key in a secret.')}[/yellow]")
+        secret_name = questionary.text(t("Enter Secret Name for API Key (default: AZURE_OPENAI_KEY):"), default="AZURE_OPENAI_KEY").ask()
+        mode_data["ai:apitokensecretname"] = secret_name
+
+        has_key = questionary.confirm(t(f"Do you have the secret '{secret_name}' set?")).ask()
+        if not has_key:
+            api_key = questionary.password(t("Enter your Azure API Key (to display setup command):")).ask()
+            if api_key:
+                 console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
+                 console.print(f"wsh secret set {secret_name}={api_key}")
+
+        # Capabilities
+        mode_data["ai:capabilities"] = _ask_capabilities()
+
+    elif provider == "custom":
+        display_name = questionary.text(t("Enter Display Name:"), default="Custom AI").ask()
+
+        # Custom needs more details
         mode_data["ai:provider"] = "custom"
-        mode_data["ai:apitype"] = "openai-chat" # Assumption
-        mode_data["ai:apitoken"] = api_token
-        # Verify endpoint?
-        # console.print(f"[yellow]{t('Warning: Direct Anthropic support requires an OpenAI compatible endpoint.')}[/yellow]")
 
-    elif provider == "Ollama (Local)":
-        # "ai:provider" is not "ollama" in the docs list (openai, openrouter, google, azure, custom).
-        # So we use "custom" or just omit provider (which defaults to custom/manual).
-        # Docs example for Ollama uses: "ai:apitype": "openai-chat", "ai:endpoint": "..."
-        mode_data["ai:provider"] = "custom"
-        mode_data["ai:apitype"] = "openai-chat"
-        mode_data["ai:endpoint"] = base_url
-        mode_data["ai:apitoken"] = "ollama"
-        # "ai:capabilities": ["tools"] is recommended for local models
-        mode_data["ai:capabilities"] = ["tools"]
+        # API Type
+        api_type = questionary.select(
+            t("Select API Type:"),
+            choices=[
+                "openai-chat",
+                "openai-responses",
+                "google-gemini"
+            ],
+            default="openai-chat"
+        ).ask()
+        mode_data["ai:apitype"] = api_type
 
-    # 5. Save to Config (waveai.json)
+        # Model
+        model = questionary.text(t("Enter Model Name:")).ask()
+        mode_data["ai:model"] = model
+
+        # Endpoint
+        endpoint = questionary.text(t("Enter Endpoint URL (e.g. http://localhost:11434/v1/chat/completions):"),
+                                    default="http://localhost:11434/v1/chat/completions").ask()
+        mode_data["ai:endpoint"] = endpoint
+
+        # Token
+        use_secret = questionary.confirm(t("Do you want to use a secret for the API Token?")).ask()
+        if use_secret:
+             secret_name = questionary.text(t("Enter Secret Name:")).ask()
+             mode_data["ai:apitokensecretname"] = secret_name
+             # Prompt to set secret
+             console.print(f"[bold cyan]{t('Remember to run: wsh secret set {secret_name}=<your-key>')}[/bold cyan]")
+        else:
+             token = questionary.text(t("Enter API Token (or 'not-needed'/'ollama'):"), default="not-needed").ask()
+             mode_data["ai:apitoken"] = token
+
+        # Capabilities
+        mode_data["ai:capabilities"] = _ask_capabilities()
+
+    # 3. General Settings
+    mode_data["display:name"] = display_name
+
+    # Icon
+    icon = questionary.text(t("Enter Icon Name (FontAwesome, e.g. robot, sparkles, brain) [optional]:"), default="").ask()
+    if icon:
+        mode_data["display:icon"] = icon
+
+    # Thinking Level
+    thinking = questionary.select(
+        t("Select Thinking Level (optional):"),
+        choices=["none", "low", "medium", "high"],
+        default="none"
+    ).ask()
+    if thinking != "none":
+        mode_data["ai:thinkinglevel"] = thinking
+
+    # Generate Key
+    # Sanitize display name for key
+    sanitized = re.sub(r'[^a-zA-Z0-9]', '-', display_name.lower())
+    sanitized = re.sub(r'-+', '-', sanitized).strip('-')
+    default_key = sanitized
+
+    key = questionary.text(t("Enter a unique ID for this mode (key in json):"), default=default_key).ask()
+
+    # 4. Save
     cm = ConfigManager()
-    cm.update_waveai_mode(mode_key, mode_data)
+    cm.update_waveai_mode(key, mode_data)
 
-    console.print(f"[green]{t('Successfully saved AI mode \'{preset_name_input}\' to ~/.config/waveterm/waveai.json', preset_name_input=preset_name_input)}[/green]")
+    console.print(f"[green]{t('Successfully saved AI mode \'{display_name}\' to waveai.json')}[/green]")
 
-    # 6. Ask to set as default
+    # 5. Set as Default
     set_default = questionary.confirm(t("Do you want to set this as your default AI mode?")).ask()
     if set_default:
-        cm.set_config_value("waveai:defaultmode", mode_key)
-        console.print(f"[green]{t('Set \'{preset_name_input}\' (key: {mode_key}) as the default AI mode.', preset_name_input=preset_name_input, mode_key=mode_key)}[/green]")
+        cm.set_config_value("waveai:defaultmode", key)
+        console.print(f"[green]{t('Set \'{key}\' as the default AI mode.')}[/green]")
+
+def _ask_capabilities():
+    """Helper to ask for capabilities."""
+    choices = [
+        questionary.Choice("Tools (Read/Write files, run commands)", value="tools", checked=True),
+        questionary.Choice("Images (Vision)", value="images"),
+        questionary.Choice("PDFs (Read PDF content)", value="pdfs")
+    ]
+
+    caps = questionary.checkbox(
+        t("Select Capabilities supported by this model:"),
+        choices=choices
+    ).ask()
+
+    return caps
