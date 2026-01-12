@@ -203,7 +203,12 @@ def configure_ai_settings():
     # Thinking Level
     thinking = questionary.select(
         t("Select Thinking Level (optional):"),
-        choices=["none", "low", "medium", "high"],
+        choices=[
+            questionary.Choice(title=t("None"), value="none"),
+            questionary.Choice(title=t("Quick (Low)"), value="low"),
+            questionary.Choice(title=t("Balanced (Medium)"), value="medium"),
+            questionary.Choice(title=t("Deep (High)"), value="high")
+        ],
         default="none"
     ).ask()
     if thinking != "none":
@@ -234,7 +239,8 @@ def _ask_capabilities():
     choices = [
         questionary.Choice("Tools (Read/Write files, run commands)", value="tools", checked=True),
         questionary.Choice("Images (Vision)", value="images"),
-        questionary.Choice("PDFs (Read PDF content)", value="pdfs")
+        questionary.Choice("PDFs (Read PDF content)", value="pdfs"),
+        questionary.Choice("Listing (Directory Listing)", value="listing")
     ]
 
     caps = questionary.checkbox(

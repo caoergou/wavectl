@@ -57,17 +57,33 @@ def test_configure_ai_settings_openai(mock_confirm, mock_password, mock_text, mo
     # Since it uses a MockConfigManager, it doesn't write to disk. We intercept the call.
 
     # Setup mocks for user input
-    # Flow: Select Provider -> OpenAI -> Model -> Key -> Preset Name -> Confirm Default
+    # Flow:
+    # 1. Select Provider -> "openai"
+    # 2. Display Name -> "My OpenAI"
+    # 3. Model -> "gpt-5.1"
+    # 4. Secret Confirm -> False
+    # 5. Secret Input -> "sk-test-key"
+    # 6. Icon -> "brain"
+    # 7. Thinking -> "medium" (value)
+    # 8. Key -> "my-openai"
+    # 9. Confirm Default -> True
 
-    # 1. Select Provider
-    mock_select.return_value.ask.return_value = "OpenAI"
+    # 1. Select Provider & Thinking
+    mock_select.return_value.ask.side_effect = ["openai", "medium"]
 
-    # 2. Details
-    mock_text.return_value.ask.side_effect = ["gpt-4o", "My OpenAI"] # Model, Preset Name
+    # 2. Text Inputs
+    mock_text.return_value.ask.side_effect = [
+        "My OpenAI", # Display Name
+        "gpt-5.1",   # Model
+        "brain",     # Icon
+        "my-openai"  # Key
+    ]
+
+    # 3. Passwords
     mock_password.return_value.ask.return_value = "sk-test-key"
 
-    # 3. Confirm default
-    mock_confirm.return_value.ask.return_value = True
+    # 4. Confirmations
+    mock_confirm.return_value.ask.side_effect = [False, True] # Secret present? No. Set Default? Yes.
 
     # Setup ConfigManager mock instance
     mock_cm_instance = MockConfigManager.return_value
@@ -81,18 +97,25 @@ def test_configure_ai_settings_openai(mock_confirm, mock_password, mock_text, mo
     args, _ = mock_cm_instance.update_waveai_mode.call_args
     key, data = args
 
-    # Verify the keys are modern (no "ai@" prefix for mode key in waveai.json, though logic used sanitized_name)
-    assert key == "openai-gpt-4o"
+    # Verify the keys are modern
+    assert key == "my-openai"
 
     # Check data content
     assert data["ai:provider"] == "openai"
-    assert data["ai:model"] == "gpt-4o"
-    assert data["ai:apitoken"] == "sk-test-key"
+    assert data["ai:model"] == "gpt-5.1"
+    assert data["display:icon"] == "brain"
+    assert data["ai:thinkinglevel"] == "medium"
+    # Note: Secret is not stored in waveai.json for openai, it's just set via wsh secret set command printed to user.
+    # But for 'custom' it might be different. OpenAI uses standard env var or secret key.
+    # verify logic:
+    # if provider == "openai": ...
+    # console.print ... wsh secret set ...
+    # mode_data["ai:provider"] = "openai"
+    # mode_data["ai:model"] = model
 
     # Validate against schema
     simulation_waveai = {key: data}
     ConfigValidator.validate("waveai.json", simulation_waveai)
 
     # 2. set_config_value should be called (since we said yes to default)
-    # Modern key is waveai:defaultmode
     mock_cm_instance.set_config_value.assert_called_with("waveai:defaultmode", key)
