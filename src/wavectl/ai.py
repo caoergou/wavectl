@@ -9,6 +9,77 @@ console = Console()
 def configure_ai_settings():
     console.print(f"[bold green]{t('Configure AI Settings')}[/bold green]")
 
+    while True:
+        choice = questionary.select(
+            t("Select Action:"),
+            choices=[
+                questionary.Choice(title=t("Add New AI Mode"), value="add"),
+                questionary.Choice(title=t("Global AI Settings"), value="global"),
+                questionary.Separator(),
+                questionary.Choice(title=t("Go Back"), value="back")
+            ]
+        ).ask()
+
+        if choice == "back":
+            break
+        elif choice == "add":
+            add_ai_mode()
+        elif choice == "global":
+            configure_global_ai_settings()
+
+def configure_global_ai_settings():
+    console.print(f"[bold blue]{t('Global AI Settings')}[/bold blue]")
+    cm = ConfigManager()
+
+    # 1. Default Mode
+    modes = cm.load_waveai()
+    if not modes:
+        console.print(f"[yellow]{t('No AI modes found. Please add a mode first.')}[/yellow]")
+    else:
+        current_settings = cm.load_settings()
+        current_default = current_settings.get("waveai:defaultmode", "")
+
+        choices = []
+        for key, data in modes.items():
+             name = data.get("display:name", key)
+             title = f"{name} ({key})"
+             if key == current_default:
+                 title += " [Current Default]"
+             choices.append(questionary.Choice(title=title, value=key))
+
+        choices.append(questionary.Separator())
+        choices.append(questionary.Choice(title=t("Skip / Keep Current"), value="skip"))
+
+        default_mode = questionary.select(
+            t("Select Default AI Mode:"),
+            choices=choices
+        ).ask()
+
+        if default_mode and default_mode != "skip":
+             cm.set_config_value("waveai:defaultmode", default_mode)
+             console.print(f"[green]{t('Set \'{default_mode}\' as the default AI mode.')}[/green]")
+
+    # 2. Show Cloud Modes
+    current_settings = cm.load_settings()
+    # If key is missing, default is True (show clouds)
+    current_show = current_settings.get("waveai:showcloudmodes", True)
+
+    action = questionary.select(
+        t("Show Built-in Cloud Modes (OpenAI, Anthropic, etc.)?"),
+        choices=[
+            questionary.Choice(title=t("Show Cloud Modes"), value=True),
+            questionary.Choice(title=t("Hide Cloud Modes"), value=False),
+            questionary.Choice(title=t("Keep Current ({val})", val=current_show), value="skip")
+        ],
+        default=current_show
+    ).ask()
+
+    if action != "skip":
+         cm.set_config_value("waveai:showcloudmodes", action)
+         console.print(f"[green]{t('Successfully updated global AI settings.')}[/green]")
+
+
+def add_ai_mode():
     # 1. Select Provider
     provider = questionary.select(
         t("Select AI Provider:"),
@@ -122,21 +193,7 @@ def configure_ai_settings():
         if api_version:
              mode_data["ai:azureapiversion"] = api_version
 
-        # Secrets handling (Same as Azure modern?)
-        # Docs say: "ai:apitokensecretname to AZURE_OPENAI_KEY" for azure, but doesn't explicitly mention it for azure-legacy in the summary list,
-        # but assumes same secret usually.
-        # Actually, legacy might need manual secret or same one.
-        # Docs example for Legacy doesn't show secret config explicitly in the "The provider automatically sets..." section like modern does,
-        # BUT checking "Supported Providers" section:
-        # "azure-legacy - Azure OpenAI Service (legacy deployment API)"
-        # It says "The provider automatically constructs the full endpoint URL and sets the API version...".
-        # It doesn't explicitly say it sets the secret name.
-        # However, it's safer to ask or assume manual config if not specified.
-        # Wait, if provider is used, it usually sets defaults.
-        # Let's assume it uses AZURE_OPENAI_KEY or ask user if they want to specify a secret name.
-        # But for simplicity, let's look at "Full Configuration" reference.
-        # "ai:apitokensecretname" can be set manually.
-
+        # Secrets handling
         console.print(f"[yellow]{t('Note: For Azure Legacy, you should store your API key in a secret.')}[/yellow]")
         secret_name = questionary.text(t("Enter Secret Name for API Key (default: AZURE_OPENAI_KEY):"), default="AZURE_OPENAI_KEY").ask()
         mode_data["ai:apitokensecretname"] = secret_name
@@ -153,6 +210,9 @@ def configure_ai_settings():
 
     elif provider == "custom":
         display_name = questionary.text(t("Enter Display Name:"), default="Custom AI").ask()
+
+        # Telemetry Note
+        console.print(f"[green]{t('Note: Custom/BYOK models do not require telemetry enabled.')}[/green]")
 
         # Custom needs more details
         mode_data["ai:provider"] = "custom"

@@ -3,7 +3,7 @@ import os
 import shutil
 from pathlib import Path
 from wavectl.config_manager import ConfigManager
-from wavectl.ai import configure_ai_settings
+from wavectl.ai import add_ai_mode
 from unittest.mock import patch
 from tests.schema_validators import ConfigValidator
 
@@ -52,8 +52,8 @@ def test_update_preset(tmp_path):
 @patch('wavectl.ai.questionary.text')
 @patch('wavectl.ai.questionary.password')
 @patch('wavectl.ai.questionary.confirm')
-def test_configure_ai_settings_openai(mock_confirm, mock_password, mock_text, mock_select, MockConfigManager, tmp_path):
-    # This test verifies the LOGIC of configure_ai_settings, but we also want to verify the SCHEMA it produces.
+def test_add_ai_mode_openai(mock_confirm, mock_password, mock_text, mock_select, MockConfigManager, tmp_path):
+    # This test verifies the LOGIC of add_ai_mode, but we also want to verify the SCHEMA it produces.
     # Since it uses a MockConfigManager, it doesn't write to disk. We intercept the call.
 
     # Setup mocks for user input
@@ -89,7 +89,7 @@ def test_configure_ai_settings_openai(mock_confirm, mock_password, mock_text, mo
     mock_cm_instance = MockConfigManager.return_value
 
     # Run the function
-    configure_ai_settings()
+    add_ai_mode()
 
     # Verify ConfigManager interactions
     # 1. update_waveai_mode should be called
