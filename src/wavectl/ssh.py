@@ -72,6 +72,29 @@ def add_ssh_connection():
     if identity_file:
         connection_data["ssh:identityfile"] = identity_file
 
+    # Optional: Password Secret
+    # v0.13: ssh:passwordsecretname
+    use_pass_secret = questionary.confirm(t("Do you want to store the SSH password in the secret store?")).ask()
+    if use_pass_secret:
+        # Sanitize hostname for secret name suggestion
+        safe_host = hostname.replace(".", "_").replace("-", "_").upper()
+        default_secret_name = f"SSH_PASSWORD_{safe_host}"
+
+        secret_name = questionary.text(
+            t("Enter Secret Name for Password:"),
+            default=default_secret_name
+        ).ask()
+
+        if secret_name:
+            connection_data["ssh:passwordsecretname"] = secret_name
+
+            has_secret = questionary.confirm(t(f"Do you have the secret '{secret_name}' set?")).ask()
+            if not has_secret:
+                password = questionary.password(t("Enter SSH Password (to display setup command):")).ask()
+                if password:
+                    console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
+                    console.print(f"wsh secret set {secret_name}={password}")
+
     # 3. Save
     cm = ConfigManager()
     cm.update_connection(connection_key, connection_data)
