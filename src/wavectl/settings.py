@@ -30,6 +30,7 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("term:shiftenternewline", t("Shift+Enter for Newline"), True), value="shiftenternewline"),
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
+                questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -98,3 +99,9 @@ def configure_general_settings():
             new_val = questionary.confirm(t("Use native title bar?"), default=curr).ask()
             cm.set_config_value("window:nativetitlebar", new_val)
             console.print(f"[green]{t('Updated native title bar setting.')}[/green]")
+
+        elif choice == "macoptionismeta":
+            curr = settings.get("term:macoptionismeta", False)
+            new_val = questionary.confirm(t("Treat Option key as Meta?"), default=curr).ask()
+            cm.set_config_value("term:macoptionismeta", new_val)
+            console.print(f"[green]{t('Updated Option as Meta setting.')}[/green]")

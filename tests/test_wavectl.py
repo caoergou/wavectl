@@ -20,7 +20,10 @@ def test_save_and_load_settings(tmp_path):
     config_dir = tmp_path / "waveterm"
     cm = ConfigManager(config_dir=str(config_dir))
 
-    settings = {"term:theme": "dark"} # Updated to use valid key
+    settings = {
+        "term:theme": "dark",
+        "term:macoptionismeta": True
+    }
     cm.save_settings(settings)
 
     loaded = cm.load_settings()
