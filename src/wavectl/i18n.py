@@ -61,6 +61,10 @@ TRANSLATIONS = {
         "Anthropic (Claude)": "Anthropic (Claude)",
         "Ollama (Local)": "Ollama (本地)",
         "Warning: Direct Anthropic support requires an OpenAI compatible endpoint.": "警告：直接支持 Anthropic 需要兼容 OpenAI 的端点。",
+        "MacOS Option as Meta": "MacOS Option 键作为 Meta 键",
+        "Treat Option key as Meta on MacOS?": "在 MacOS 上将 Option 键视为 Meta 键？",
+        "Updated MacOS Option as Meta setting.": "已更新 MacOS Option 键作为 Meta 键的设置。",
+        "Enter Model Name:": "输入模型名称：",
     }
 }
 
