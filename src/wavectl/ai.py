@@ -230,7 +230,7 @@ def add_ai_mode():
         mode_data["ai:apitype"] = api_type
 
         # Model
-        model = questionary.text(t("Enter Model Name:")).ask()
+        model = questionary.text(t("Enter Model Name:"), default="llama3.3").ask()
         mode_data["ai:model"] = model
 
         # Endpoint

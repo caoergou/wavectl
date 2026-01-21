@@ -102,6 +102,6 @@ def configure_general_settings():
 
         elif choice == "macoptionismeta":
             curr = settings.get("term:macoptionismeta", False)
-            new_val = questionary.confirm(t("Treat Option key as Meta?"), default=curr).ask()
+            new_val = questionary.confirm(t("Treat Option key as Meta on MacOS?"), default=curr).ask()
             cm.set_config_value("term:macoptionismeta", new_val)
-            console.print(f"[green]{t('Updated Option as Meta setting.')}[/green]")
+            console.print(f"[green]{t('Updated MacOS Option as Meta setting.')}[/green]")
