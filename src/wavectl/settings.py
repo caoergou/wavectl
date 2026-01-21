@@ -30,7 +30,7 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("term:shiftenternewline", t("Shift+Enter for Newline"), True), value="shiftenternewline"),
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
-                questionary.Choice(title=_get_title("term:macoptionismeta", t("MacOS Option as Meta"), False), value="macoptionismeta"),
+                questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
