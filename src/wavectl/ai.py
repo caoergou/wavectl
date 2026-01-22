@@ -76,7 +76,58 @@ def configure_global_ai_settings():
 
     if action != "skip":
          cm.set_config_value("waveai:showcloudmodes", action)
-         console.print(f"[green]{t('Successfully updated global AI settings.')}[/green]")
+         console.print(f"[green]{t('Updated show cloud modes setting.')}[/green]")
+
+    # 3. AI Proxy URL
+    # current_settings is already loaded but might be stale if we updated it above, reloading is safer if needed,
+    # but here we just want existing values.
+    current_proxy = current_settings.get("ai:proxyurl", "")
+    proxy_choice = questionary.select(
+        t("Configure AI Proxy URL?"),
+        choices=[
+            questionary.Choice(title=t("Keep Current ({val})", val=current_proxy if current_proxy else "None"), value="skip"),
+            questionary.Choice(title=t("Set New Proxy URL"), value="set"),
+            questionary.Choice(title=t("Clear Proxy URL"), value="clear")
+        ]
+    ).ask()
+
+    if proxy_choice == "set":
+        new_proxy = questionary.text(t("Enter Proxy URL (e.g. socks5://localhost:1080):"), default=current_proxy).ask()
+        cm.set_config_value("ai:proxyurl", new_proxy)
+        console.print(f"[green]{t('Updated AI proxy URL.')}[/green]")
+    elif proxy_choice == "clear":
+        cm.set_config_value("ai:proxyurl", "")
+        console.print(f"[green]{t('Cleared AI proxy URL.')}[/green]")
+
+    # 4. AI Font Size
+    current_fontsize = current_settings.get("ai:fontsize", 0)
+    current_fixedfontsize = current_settings.get("ai:fixedfontsize", 0)
+
+    font_choice = questionary.select(
+        t("Configure AI Font Sizes?"),
+        choices=[
+            questionary.Choice(title=t("Keep Current"), value="skip"),
+            questionary.Choice(title=t("Set AI Message Font Size (Current: {val})", val=current_fontsize if current_fontsize else "Default"), value="fontsize"),
+            questionary.Choice(title=t("Set AI Code/Block Font Size (Current: {val})", val=current_fixedfontsize if current_fixedfontsize else "Default"), value="fixedfontsize")
+        ]
+    ).ask()
+
+    if font_choice == "fontsize":
+        val_str = questionary.text(t("Enter Font Size (0 for default):"), default=str(current_fontsize)).ask()
+        try:
+            val = int(val_str)
+            cm.set_config_value("ai:fontsize", val)
+            console.print(f"[green]{t('Updated AI message font size.')}[/green]")
+        except ValueError:
+            console.print(f"[red]{t('Invalid integer.')}[/red]")
+    elif font_choice == "fixedfontsize":
+        val_str = questionary.text(t("Enter Fixed Font Size (0 for default):"), default=str(current_fixedfontsize)).ask()
+        try:
+            val = int(val_str)
+            cm.set_config_value("ai:fixedfontsize", val)
+            console.print(f"[green]{t('Updated AI fixed font size.')}[/green]")
+        except ValueError:
+             console.print(f"[red]{t('Invalid integer.')}[/red]")
 
 
 def add_ai_mode():
