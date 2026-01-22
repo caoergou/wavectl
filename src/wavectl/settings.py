@@ -31,6 +31,7 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
                 questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
+                questionary.Choice(title=_get_title("term:transparency", t("Terminal Transparency (0.0-1.0)"), 1.0), value="transparency"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -105,3 +106,16 @@ def configure_general_settings():
             new_val = questionary.confirm(t("Treat Option key as Meta on MacOS?"), default=curr).ask()
             cm.set_config_value("term:macoptionismeta", new_val)
             console.print(f"[green]{t('Updated MacOS Option as Meta setting.')}[/green]")
+
+        elif choice == "transparency":
+            curr = settings.get("term:transparency", 1.0)
+            new_val_str = questionary.text(t("Enter Transparency Value (0.0 to 1.0):"), default=str(curr)).ask()
+            try:
+                new_val = float(new_val_str)
+                if not (0.0 <= new_val <= 1.0):
+                    console.print(f"[red]{t('Value must be between 0.0 and 1.0')}[/red]")
+                else:
+                    cm.set_config_value("term:transparency", new_val)
+                    console.print(f"[green]{t('Updated transparency setting.')}[/green]")
+            except ValueError:
+                console.print(f"[red]{t('Invalid float.')}[/red]")
