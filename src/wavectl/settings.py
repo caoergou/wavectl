@@ -31,6 +31,11 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
                 questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
+                questionary.Choice(title=_get_title("term:fontsize", t("Terminal Font Size"), 14), value="termfontsize"),
+                questionary.Choice(title=_get_title("term:fontfamily", t("Terminal Font Family"), "default"), value="termfontfamily"),
+                questionary.Choice(title=_get_title("term:transparency", t("Terminal Transparency"), 1.0), value="termtransparency"),
+                questionary.Choice(title=_get_title("window:disablehardwareacceleration", t("Disable Hardware Acceleration"), False), value="disablehardwareacceleration"),
+                questionary.Choice(title=_get_title("widget:showhelp", t("Show Help Widget"), True), value="showhelp"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -38,6 +43,44 @@ def configure_general_settings():
 
         if choice == "back":
             break
+
+        elif choice == "termfontsize":
+            curr = settings.get("term:fontsize", 14)
+            new_val_str = questionary.text(t("Enter Font Size (int):"), default=str(curr)).ask()
+            try:
+                new_val = int(new_val_str)
+                cm.set_config_value("term:fontsize", new_val)
+                console.print(f"[green]{t('Updated terminal font size.')}[/green]")
+            except ValueError:
+                console.print(f"[red]{t('Invalid integer.')}[/red]")
+
+        elif choice == "termfontfamily":
+            curr = settings.get("term:fontfamily", "")
+            new_val = questionary.text(t("Enter Font Family (e.g. 'Fira Code', 'MesloLGS NF'):"), default=curr).ask()
+            cm.set_config_value("term:fontfamily", new_val)
+            console.print(f"[green]{t('Updated terminal font family.')}[/green]")
+
+        elif choice == "termtransparency":
+            curr = settings.get("term:transparency", 1.0)
+            new_val_str = questionary.text(t("Enter Transparency (0.0 - 1.0):"), default=str(curr)).ask()
+            try:
+                new_val = float(new_val_str)
+                cm.set_config_value("term:transparency", new_val)
+                console.print(f"[green]{t('Updated transparency.')}[/green]")
+            except ValueError:
+                console.print(f"[red]{t('Invalid float.')}[/red]")
+
+        elif choice == "disablehardwareacceleration":
+            curr = settings.get("window:disablehardwareacceleration", False)
+            new_val = questionary.confirm(t("Disable native hardware acceleration?"), default=curr).ask()
+            cm.set_config_value("window:disablehardwareacceleration", new_val)
+            console.print(f"[green]{t('Updated hardware acceleration setting.')}[/green]")
+
+        elif choice == "showhelp":
+            curr = settings.get("widget:showhelp", True)
+            new_val = questionary.confirm(t("Show help widget?"), default=curr).ask()
+            cm.set_config_value("widget:showhelp", new_val)
+            console.print(f"[green]{t('Updated help widget setting.')}[/green]")
 
         elif choice == "telemetry":
             curr = settings.get("telemetry:enabled", True)
