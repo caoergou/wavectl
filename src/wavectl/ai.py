@@ -76,7 +76,37 @@ def configure_global_ai_settings():
 
     if action != "skip":
          cm.set_config_value("waveai:showcloudmodes", action)
-         console.print(f"[green]{t('Successfully updated global AI settings.')}[/green]")
+
+    # 3. AI Proxy URL
+    current_proxy = current_settings.get("ai:proxyurl", "")
+    proxy_choice = questionary.confirm(t("Configure Global AI Proxy URL?"), default=bool(current_proxy)).ask()
+    if proxy_choice:
+        proxy_url = questionary.text(t("Enter Proxy URL (e.g., http://user:pass@host:port):"), default=current_proxy).ask()
+        cm.set_config_value("ai:proxyurl", proxy_url)
+
+    # 4. AI Font Size
+    current_font = current_settings.get("ai:fontsize", 14)
+    font_choice = questionary.confirm(t("Configure Global AI Font Size?"), default=False).ask()
+    if font_choice:
+        font_size_str = questionary.text(t("Enter Font Size (int):"), default=str(current_font)).ask()
+        try:
+             font_size = int(font_size_str)
+             cm.set_config_value("ai:fontsize", font_size)
+        except ValueError:
+             console.print(f"[red]{t('Invalid integer.')}[/red]")
+
+    # 5. AI Fixed Font Size
+    current_fixed_font = current_settings.get("ai:fixedfontsize", 14)
+    fixed_font_choice = questionary.confirm(t("Configure Global AI Fixed Font Size?"), default=False).ask()
+    if fixed_font_choice:
+        fixed_font_size_str = questionary.text(t("Enter Fixed Font Size (int):"), default=str(current_fixed_font)).ask()
+        try:
+             fixed_font_size = int(fixed_font_size_str)
+             cm.set_config_value("ai:fixedfontsize", fixed_font_size)
+        except ValueError:
+             console.print(f"[red]{t('Invalid integer.')}[/red]")
+
+    console.print(f"[green]{t('Updated global AI settings.')}[/green]")
 
 
 def add_ai_mode():
