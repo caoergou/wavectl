@@ -31,6 +31,7 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
                 questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
+                questionary.Choice(title=_get_title("window:disablehardwareacceleration", t("Disable Hardware Acceleration"), False), value="disablehardwareacceleration"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -105,3 +106,9 @@ def configure_general_settings():
             new_val = questionary.confirm(t("Treat Option key as Meta on MacOS?"), default=curr).ask()
             cm.set_config_value("term:macoptionismeta", new_val)
             console.print(f"[green]{t('Updated MacOS Option as Meta setting.')}[/green]")
+
+        elif choice == "disablehardwareacceleration":
+            curr = settings.get("window:disablehardwareacceleration", False)
+            new_val = questionary.confirm(t("Disable Hardware Acceleration?"), default=curr).ask()
+            cm.set_config_value("window:disablehardwareacceleration", new_val)
+            console.print(f"[green]{t('Updated hardware acceleration setting.')}[/green]")
