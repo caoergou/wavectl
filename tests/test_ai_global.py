@@ -17,16 +17,16 @@ def test_configure_global_ai_settings_default_mode(mock_select, MockConfigManage
     }
 
     # User interactions:
-    # 1. Select Default AI Mode -> "mode2"
-    # 2. Show Cloud Modes -> "skip"
-    mock_select.return_value.ask.side_effect = ["mode2", "skip"]
+    # 1. Select Setting -> "defaultmode"
+    # 2. Select Default AI Mode -> "mode2"
+    # 3. Select Setting -> "back"
+    mock_select.return_value.ask.side_effect = ["defaultmode", "mode2", "back"]
 
     # Run
     configure_global_ai_settings()
 
     # Verify
     mock_cm.set_config_value.assert_called_with("waveai:defaultmode", "mode2")
-    # Should NOT set showcloudmodes because we skipped
     assert mock_cm.set_config_value.call_count == 1
 
 @patch('wavectl.ai.ConfigManager')
@@ -43,9 +43,10 @@ def test_configure_global_ai_settings_show_cloud(mock_select, MockConfigManager)
     }
 
     # User interactions:
-    # 1. Select Default AI Mode -> "skip"
+    # 1. Select Setting -> "showcloudmodes"
     # 2. Show Cloud Modes -> False
-    mock_select.return_value.ask.side_effect = ["skip", False]
+    # 3. Select Setting -> "back"
+    mock_select.return_value.ask.side_effect = ["showcloudmodes", False, "back"]
 
     # Run
     configure_global_ai_settings()
