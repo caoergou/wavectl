@@ -31,52 +31,120 @@ def configure_global_ai_settings():
     console.print(f"[bold blue]{t('Global AI Settings')}[/bold blue]")
     cm = ConfigManager()
 
-    # 1. Default Mode
-    modes = cm.load_waveai()
-    if not modes:
-        console.print(f"[yellow]{t('No AI modes found. Please add a mode first.')}[/yellow]")
-    else:
-        current_settings = cm.load_settings()
-        current_default = current_settings.get("waveai:defaultmode", "")
+    while True:
+        # Load settings fresh each loop
+        settings = cm.load_settings()
+        waveai = cm.load_waveai()
 
-        choices = []
-        for key, data in modes.items():
-             name = data.get("display:name", key)
-             title = f"{name} ({key})"
-             if key == current_default:
-                 title += " [Current Default]"
-             choices.append(questionary.Choice(title=title, value=key))
+        # Helpers for current values
+        def _get_val(key, default=""):
+            return settings.get(key, default)
 
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title=t("Skip / Keep Current"), value="skip"))
+        curr_default_mode = settings.get("waveai:defaultmode", "")
+        curr_show_cloud = settings.get("waveai:showcloudmodes", True)
+        curr_proxy = _get_val("ai:proxyurl", t("None"))
+        curr_font = _get_val("ai:fontsize", t("Default"))
+        curr_fixed_font = _get_val("ai:fixedfontsize", t("Default"))
 
-        default_mode = questionary.select(
-            t("Select Default AI Mode:"),
-            choices=choices
+        choice = questionary.select(
+            t("Select Global AI Setting:"),
+            choices=[
+                questionary.Choice(title=f"{t('Default AI Mode')}: {curr_default_mode or t('None')}", value="defaultmode"),
+                questionary.Choice(title=f"{t('Show Cloud Modes')}: {curr_show_cloud}", value="showcloud"),
+                questionary.Choice(title=f"{t('AI Proxy URL')}: {curr_proxy}", value="proxy"),
+                questionary.Choice(title=f"{t('AI Font Size')}: {curr_font}", value="fontsize"),
+                questionary.Choice(title=f"{t('AI Fixed Font Size')}: {curr_fixed_font}", value="fixedfontsize"),
+                questionary.Separator(),
+                questionary.Choice(title=t("Go Back"), value="back")
+            ]
         ).ask()
 
-        if default_mode and default_mode != "skip":
-             cm.set_config_value("waveai:defaultmode", default_mode)
-             console.print(f"[green]{t('Set \'{default_mode}\' as the default AI mode.')}[/green]")
+        if choice == "back":
+            break
 
-    # 2. Show Cloud Modes
-    current_settings = cm.load_settings()
-    # If key is missing, default is True (show clouds)
-    current_show = current_settings.get("waveai:showcloudmodes", True)
+        elif choice == "defaultmode":
+            modes = waveai
+            if not modes:
+                console.print(f"[yellow]{t('No AI modes found. Please add a mode first.')}[/yellow]")
+                continue
 
-    action = questionary.select(
-        t("Show Built-in Cloud Modes (OpenAI, Anthropic, etc.)?"),
-        choices=[
-            questionary.Choice(title=t("Show Cloud Modes"), value=True),
-            questionary.Choice(title=t("Hide Cloud Modes"), value=False),
-            questionary.Choice(title=t("Keep Current ({val})", val=current_show), value="skip")
-        ],
-        default=current_show
-    ).ask()
+            choices = []
+            for key, data in modes.items():
+                 name = data.get("display:name", key)
+                 title = f"{name} ({key})"
+                 if key == curr_default_mode:
+                     title += " [Current Default]"
+                 choices.append(questionary.Choice(title=title, value=key))
 
-    if action != "skip":
-         cm.set_config_value("waveai:showcloudmodes", action)
-         console.print(f"[green]{t('Successfully updated global AI settings.')}[/green]")
+            choices.append(questionary.Separator())
+            choices.append(questionary.Choice(title=t("Skip / Keep Current"), value="skip"))
+
+            default_mode = questionary.select(
+                t("Select Default AI Mode:"),
+                choices=choices
+            ).ask()
+
+            if default_mode and default_mode != "skip":
+                 cm.set_config_value("waveai:defaultmode", default_mode)
+                 console.print(f"[green]{t('Set \'{default_mode}\' as the default AI mode.')}[/green]")
+
+        elif choice == "showcloud":
+            action = questionary.select(
+                t("Show Built-in Cloud Modes (OpenAI, Anthropic, etc.)?"),
+                choices=[
+                    questionary.Choice(title=t("Show Cloud Modes"), value=True),
+                    questionary.Choice(title=t("Hide Cloud Modes"), value=False),
+                    questionary.Choice(title=t("Keep Current ({val})", val=curr_show_cloud), value="skip")
+                ],
+                default=curr_show_cloud
+            ).ask()
+
+            if action != "skip":
+                 cm.set_config_value("waveai:showcloudmodes", action)
+                 console.print(f"[green]{t('Updated show cloud modes setting.')}[/green]")
+
+        elif choice == "proxy":
+            curr = settings.get("ai:proxyurl", "")
+            new_val = questionary.text(t("Enter Proxy URL (empty to remove):"), default=curr).ask()
+            if new_val.strip() == "":
+                cm.set_config_value("ai:proxyurl", None) # Remove key logic in config_manager handles None?
+                # Actually ConfigManager update_widget handles None to remove, set_config_value just overwrites.
+                # But JSON dump with None usually writes null. WaveTerm might handle null or we should pop.
+                # The memory says: "Configuration values ... can be reset or removed by entering an empty string ... which the system treats as a removal instruction (mapping to None/null)."
+                # So passing None is correct.
+                cm.set_config_value("ai:proxyurl", None)
+                console.print(f"[green]{t('Removed proxy URL.')}[/green]")
+            else:
+                cm.set_config_value("ai:proxyurl", new_val)
+                console.print(f"[green]{t('Updated proxy URL.')}[/green]")
+
+        elif choice == "fontsize":
+            curr = str(settings.get("ai:fontsize", ""))
+            new_val_str = questionary.text(t("Enter AI Font Size (int, 0/empty to default):"), default=curr).ask()
+            if not new_val_str.strip() or new_val_str.strip() == "0":
+                 cm.set_config_value("ai:fontsize", None)
+                 console.print(f"[green]{t('Reset AI font size to default.')}[/green]")
+            else:
+                 try:
+                     val = int(new_val_str)
+                     cm.set_config_value("ai:fontsize", val)
+                     console.print(f"[green]{t('Updated AI font size.')}[/green]")
+                 except ValueError:
+                     console.print(f"[red]{t('Invalid integer.')}[/red]")
+
+        elif choice == "fixedfontsize":
+            curr = str(settings.get("ai:fixedfontsize", ""))
+            new_val_str = questionary.text(t("Enter AI Fixed Font Size (int, 0/empty to default):"), default=curr).ask()
+            if not new_val_str.strip() or new_val_str.strip() == "0":
+                 cm.set_config_value("ai:fixedfontsize", None)
+                 console.print(f"[green]{t('Reset AI fixed font size to default.')}[/green]")
+            else:
+                 try:
+                     val = int(new_val_str)
+                     cm.set_config_value("ai:fixedfontsize", val)
+                     console.print(f"[green]{t('Updated AI fixed font size.')}[/green]")
+                 except ValueError:
+                     console.print(f"[red]{t('Invalid integer.')}[/red]")
 
 
 def add_ai_mode():
