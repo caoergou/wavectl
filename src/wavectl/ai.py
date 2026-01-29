@@ -342,6 +342,15 @@ def add_ai_mode():
     if thinking != "none":
         mode_data["ai:thinkinglevel"] = thinking
 
+    # Max Output Tokens
+    max_tokens_str = questionary.text(t("Enter Max Output Tokens (int, optional, e.g. 4096):"), default="").ask()
+    if max_tokens_str.strip():
+        try:
+            max_tokens = int(max_tokens_str)
+            mode_data["ai:maxtokens"] = max_tokens
+        except ValueError:
+            console.print(f"[red]{t('Invalid integer for Max Tokens. Skipping.')}[/red]")
+
     # Generate Key
     # Sanitize display name for key
     sanitized = re.sub(r'[^a-zA-Z0-9]', '-', display_name.lower())

@@ -31,6 +31,9 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
                 questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
+                questionary.Choice(title=_get_title("term:transparency", t("Terminal Transparency"), 1.0), value="transparency"),
+                questionary.Choice(title=_get_title("window:disablehardwareacceleration", t("Disable Hardware Acceleration"), False), value="disablehardwareacceleration"),
+                questionary.Choice(title=_get_title("term:allowbracketedpaste", t("Allow Bracketed Paste"), True), value="allowbracketedpaste"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -105,3 +108,27 @@ def configure_general_settings():
             new_val = questionary.confirm(t("Treat Option key as Meta on MacOS?"), default=curr).ask()
             cm.set_config_value("term:macoptionismeta", new_val)
             console.print(f"[green]{t('Updated MacOS Option as Meta setting.')}[/green]")
+
+        elif choice == "transparency":
+            curr = settings.get("term:transparency", 1.0)
+            new_val_str = questionary.text(t("Enter Transparency (0.0 to 1.0):"), default=str(curr)).ask()
+            try:
+                new_val = float(new_val_str)
+                if new_val < 0.0: new_val = 0.0
+                if new_val > 1.0: new_val = 1.0
+                cm.set_config_value("term:transparency", new_val)
+                console.print(f"[green]{t('Updated transparency setting.')}[/green]")
+            except ValueError:
+                console.print(f"[red]{t('Invalid number.')}[/red]")
+
+        elif choice == "disablehardwareacceleration":
+            curr = settings.get("window:disablehardwareacceleration", False)
+            new_val = questionary.confirm(t("Disable Hardware Acceleration?"), default=curr).ask()
+            cm.set_config_value("window:disablehardwareacceleration", new_val)
+            console.print(f"[green]{t('Updated hardware acceleration setting.')}[/green]")
+
+        elif choice == "allowbracketedpaste":
+            curr = settings.get("term:allowbracketedpaste", True)
+            new_val = questionary.confirm(t("Allow Bracketed Paste?"), default=curr).ask()
+            cm.set_config_value("term:allowbracketedpaste", new_val)
+            console.print(f"[green]{t('Updated bracketed paste setting.')}[/green]")

@@ -19,6 +19,7 @@ def test_add_ai_mode_custom_llama(mock_checkbox, mock_confirm, mock_text, mock_s
         "http://localhost:11434/v1/chat/completions", # Endpoint
         "not-needed",   # Token
         "brain",        # Icon
+        "",             # Max Tokens
         "local-llama"   # Key
     ]
 
