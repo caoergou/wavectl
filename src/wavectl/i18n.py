@@ -65,6 +65,14 @@ TRANSLATIONS = {
         "Treat Option key as Meta on MacOS?": "在 MacOS 上将 Option 键视为 Meta 键？",
         "Updated MacOS Option as Meta setting.": "已更新 MacOS Option 键作为 Meta 键的设置。",
         "Enter Model Name:": "输入模型名称：",
+        "Window Transparency": "窗口透明度",
+        "Enter Transparency (0.0 - 1.0):": "输入透明度 (0.0 - 1.0)：",
+        "Updated transparency setting.": "已更新透明度设置。",
+        "Invalid float.": "无效的浮点数。",
+        "Value must be between 0.0 and 1.0.": "值必须在 0.0 到 1.0 之间。",
+        "Allow Bracketed Paste": "允许括号粘贴模式",
+        "Enable Bracketed Paste Mode?": "启用括号粘贴模式？",
+        "Updated bracketed paste setting.": "已更新括号粘贴设置。",
     }
 }
 
@@ -76,9 +84,14 @@ def _get_system_locale():
     if env_lang:
         return env_lang
 
-    # Priority 2: System Locale
+    # Priority 2: LANG environment variable
+    lang_env = os.environ.get("LANG")
+    if lang_env:
+        return lang_env
+
+    # Priority 3: System Locale
     try:
-        sys_locale, _ = locale.getdefaultlocale()
+        sys_locale = locale.getlocale()[0]
         if sys_locale:
             return sys_locale
     except:
