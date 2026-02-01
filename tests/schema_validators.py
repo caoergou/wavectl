@@ -32,7 +32,7 @@ class ConfigValidator:
         "editor:fontsize", "editor:inlinediff",
 
         # Web
-        "web:openlinksinternally", "web:defaulturl", "web:defaultsearch",
+        "web:openlinksinternally", "web:defaulturl", "web:defaultsearch", "web:homedefault",
 
         # Block Header
         "blockheader:showblockids",

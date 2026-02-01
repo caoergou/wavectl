@@ -31,6 +31,11 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("preview:showhiddenfiles", t("Show Hidden Files in Preview"), False), value="showhiddenfiles"),
                 questionary.Choice(title=_get_title("window:nativetitlebar", t("Use Native Title Bar"), False), value="nativetitlebar"),
                 questionary.Choice(title=_get_title("term:macoptionismeta", t("Use Option as Meta (MacOS)"), False), value="macoptionismeta"),
+                questionary.Choice(title=_get_title("term:transparency", t("Terminal Transparency"), 1.0), value="transparency"),
+                questionary.Choice(title=_get_title("window:disablehardwareacceleration", t("Disable Hardware Acceleration"), False), value="disablehardwareacceleration"),
+                questionary.Choice(title=_get_title("term:allowbracketedpaste", t("Allow Bracketed Paste"), True), value="allowbracketedpaste"),
+                questionary.Choice(title=_get_title("editor:wordwrap", t("Editor Word Wrap"), False), value="editorwordwrap"),
+                questionary.Choice(title=_get_title("web:homedefault", t("Default Web Home URL"), ""), value="webhomedefault"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -105,3 +110,44 @@ def configure_general_settings():
             new_val = questionary.confirm(t("Treat Option key as Meta on MacOS?"), default=curr).ask()
             cm.set_config_value("term:macoptionismeta", new_val)
             console.print(f"[green]{t('Updated MacOS Option as Meta setting.')}[/green]")
+
+        elif choice == "transparency":
+            curr = settings.get("term:transparency", 1.0)
+            new_val_str = questionary.text(t("Enter Transparency (0.0 to 1.0):"), default=str(curr)).ask()
+            try:
+                val = float(new_val_str)
+                if val < 0.0 or val > 1.0:
+                    console.print(f"[red]{t('Value must be between 0.0 and 1.0')}[/red]")
+                else:
+                    cm.set_config_value("term:transparency", val)
+                    console.print(f"[green]{t('Updated transparency setting.')}[/green]")
+            except ValueError:
+                console.print(f"[red]{t('Invalid float.')}[/red]")
+
+        elif choice == "disablehardwareacceleration":
+            curr = settings.get("window:disablehardwareacceleration", False)
+            new_val = questionary.confirm(t("Disable Hardware Acceleration?"), default=curr).ask()
+            cm.set_config_value("window:disablehardwareacceleration", new_val)
+            console.print(f"[green]{t('Updated hardware acceleration setting.')}[/green]")
+
+        elif choice == "allowbracketedpaste":
+            curr = settings.get("term:allowbracketedpaste", True)
+            new_val = questionary.confirm(t("Allow Bracketed Paste?"), default=curr).ask()
+            cm.set_config_value("term:allowbracketedpaste", new_val)
+            console.print(f"[green]{t('Updated bracketed paste setting.')}[/green]")
+
+        elif choice == "editorwordwrap":
+            curr = settings.get("editor:wordwrap", False)
+            new_val = questionary.confirm(t("Enable Editor Word Wrap?"), default=curr).ask()
+            cm.set_config_value("editor:wordwrap", new_val)
+            console.print(f"[green]{t('Updated editor word wrap setting.')}[/green]")
+
+        elif choice == "webhomedefault":
+            curr = settings.get("web:homedefault", "")
+            new_val = questionary.text(t("Enter Default Web Home URL (empty to remove):"), default=curr).ask()
+            if new_val.strip() == "":
+                cm.set_config_value("web:homedefault", None)
+                console.print(f"[green]{t('Removed default web home URL.')}[/green]")
+            else:
+                cm.set_config_value("web:homedefault", new_val)
+                console.print(f"[green]{t('Updated default web home URL.')}[/green]")
