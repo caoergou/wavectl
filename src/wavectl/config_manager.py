@@ -14,6 +14,7 @@ class ConfigManager:
         self.settings_file = self.config_dir / "settings.json"
         self.connections_file = self.config_dir / "connections.json"
         self.widgets_file = self.config_dir / "widgets.json"
+        self.wavectl_config_file = self.config_dir / "wavectl.json"
 
         # Ensure directories exist
         self.ensure_config_dirs()
@@ -114,3 +115,11 @@ class ConfigManager:
         if key in widgets:
             del widgets[key]
             self.save_widgets(widgets)
+
+    def load_wavectl_config(self) -> Dict[str, Any]:
+        """Load wavectl tool specific configuration."""
+        return self._read_json(self.wavectl_config_file)
+
+    def save_wavectl_config(self, data: Dict[str, Any]):
+        """Save wavectl tool specific configuration."""
+        self._write_json(self.wavectl_config_file, data)

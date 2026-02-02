@@ -1,7 +1,7 @@
 import questionary
 from rich.console import Console
 from .config_manager import ConfigManager
-from .i18n import t
+from .i18n import t, set_language, get_language
 
 console = Console()
 
@@ -36,6 +36,7 @@ def configure_general_settings():
                 questionary.Choice(title=_get_title("term:allowbracketedpaste", t("Allow Bracketed Paste"), True), value="allowbracketedpaste"),
                 questionary.Choice(title=_get_title("editor:wordwrap", t("Editor Word Wrap"), False), value="editorwordwrap"),
                 questionary.Choice(title=_get_title("web:homedefault", t("Default Web Home URL"), ""), value="webhomedefault"),
+                questionary.Choice(title=f"{t('Language')}: {get_language()}", value="language"),
                 questionary.Separator(),
                 questionary.Choice(title=t("Go Back"), value="back")
             ]
@@ -151,3 +152,16 @@ def configure_general_settings():
             else:
                 cm.set_config_value("web:homedefault", new_val)
                 console.print(f"[green]{t('Updated default web home URL.')}[/green]")
+
+        elif choice == "language":
+            lang_choice = questionary.select(
+                t("Select Language:"),
+                choices=[
+                    questionary.Choice(title="English", value="en_US"),
+                    questionary.Choice(title="中文", value="zh_CN")
+                ],
+                default=get_language()
+            ).ask()
+            if lang_choice:
+                set_language(lang_choice)
+                console.print(f"[green]{t('Language updated.')}[/green]")
