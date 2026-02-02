@@ -95,6 +95,20 @@ def add_ssh_connection():
                     console.print(f"[bold cyan]{t('Please run the following command to set your secret:')}[/bold cyan]")
                     console.print(f"wsh secret set {secret_name}={password}")
 
+    # Environment Variables (cmd:env)
+    configure_env = questionary.confirm(t("Configure environment variables?")).ask()
+    if configure_env:
+        env_vars = {}
+        while True:
+            var_name = questionary.text(t("Enter Variable Name (empty to finish):")).ask()
+            if not var_name or not var_name.strip():
+                break
+            var_value = questionary.text(t("Enter Value for {var}:", var=var_name)).ask()
+            env_vars[var_name] = var_value
+
+        if env_vars:
+            connection_data["cmd:env"] = env_vars
+
     # 3. Save
     cm = ConfigManager()
     cm.update_connection(connection_key, connection_data)

@@ -237,6 +237,9 @@ TRANSLATIONS = {
         "Language updated.": "语言已更新。",
         "None": "无",
         "Default": "默认",
+        "Configure environment variables?": "配置环境变量？",
+        "Enter Variable Name (empty to finish):": "输入变量名称 (留空以结束)：",
+        "Enter Value for {var}:": "输入 {var} 的值：",
     }
 }
 
