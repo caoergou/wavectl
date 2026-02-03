@@ -174,8 +174,8 @@ def add_ai_mode():
     model = ""
 
     if provider == "openai":
-        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-5.2").ask()
-        model = questionary.text(t("Enter Model Name:"), default="gpt-5.2").ask()
+        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-5.1").ask()
+        model = questionary.text(t("Enter Model Name:"), default="gpt-5.1").ask()
 
         mode_data["ai:provider"] = "openai"
         mode_data["ai:model"] = model
@@ -341,6 +341,15 @@ def add_ai_mode():
     ).ask()
     if thinking != "none":
         mode_data["ai:thinkinglevel"] = thinking
+
+    # Max Tokens
+    max_tokens_str = questionary.text(t("Enter Max Tokens (int, 0/empty to default):"), default="").ask()
+    if max_tokens_str and max_tokens_str.strip() and max_tokens_str != "0":
+         try:
+             max_tokens = int(max_tokens_str)
+             mode_data["ai:maxtokens"] = max_tokens
+         except ValueError:
+             console.print(f"[red]{t('Invalid integer for Max Tokens. Skipping.')}[/red]")
 
     # Generate Key
     # Sanitize display name for key

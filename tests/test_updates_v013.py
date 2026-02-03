@@ -19,6 +19,7 @@ def test_add_ai_mode_custom_llama(mock_checkbox, mock_confirm, mock_text, mock_s
         "http://localhost:11434/v1/chat/completions", # Endpoint
         "not-needed",   # Token
         "brain",        # Icon
+        "2000",         # Max Tokens
         "local-llama"   # Key
     ]
 
@@ -36,6 +37,7 @@ def test_add_ai_mode_custom_llama(mock_checkbox, mock_confirm, mock_text, mock_s
     assert key == "local-llama"
     assert data["ai:provider"] == "custom"
     assert data["ai:model"] == "llama3.3"
+    assert data["ai:maxtokens"] == 2000
 
     # Verify defaults in calls
     # Use assert_any_call to find if the call was made with correct default
@@ -59,3 +61,21 @@ def test_configure_macoptionismeta(mock_confirm, mock_select, MockConfigManager)
     configure_general_settings()
 
     mock_cm_instance.set_config_value.assert_called_with("term:macoptionismeta", True)
+
+
+@patch('wavectl.settings.ConfigManager')
+@patch('wavectl.settings.questionary.select')
+@patch('wavectl.settings.questionary.text')
+def test_configure_termfontsize(mock_text, mock_select, MockConfigManager):
+    """Test configuring term:fontsize setting."""
+
+    mock_cm_instance = MockConfigManager.return_value
+    mock_cm_instance.load_settings.return_value = {}
+
+    # Flow: Select "termfontsize" -> Enter "14" -> Back
+    mock_select.return_value.ask.side_effect = ["termfontsize", "back"]
+    mock_text.return_value.ask.return_value = "14"
+
+    configure_general_settings()
+
+    mock_cm_instance.set_config_value.assert_called_with("term:fontsize", 14)

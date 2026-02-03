@@ -22,6 +22,7 @@ def configure_general_settings():
             t("Select Setting to Configure:"),
             choices=[
                 questionary.Choice(title=_get_title("telemetry:enabled", t("Telemetry Enabled"), True), value="telemetry"),
+                questionary.Choice(title=_get_title("term:fontsize", t("Terminal Font Size"), t("Default")), value="termfontsize"),
                 questionary.Choice(title=_get_title("term:scrollback", t("Terminal Scrollback"), -1), value="scrollback"),
                 questionary.Choice(title=_get_title("term:copyonselect", t("Copy on Select"), True), value="copyonselect"),
                 questionary.Choice(title=_get_title("window:confirmclose", t("Confirm Window Close"), True), value="confirmclose"),
@@ -50,6 +51,20 @@ def configure_general_settings():
             new_val = questionary.confirm(t("Enable Telemetry?"), default=curr).ask()
             cm.set_config_value("telemetry:enabled", new_val)
             console.print(f"[green]{t('Updated telemetry setting.')}[/green]")
+
+        elif choice == "termfontsize":
+            curr = str(settings.get("term:fontsize", ""))
+            new_val_str = questionary.text(t("Enter Terminal Font Size (int, 0/empty to default):"), default=curr).ask()
+            if not new_val_str.strip() or new_val_str.strip() == "0":
+                 cm.set_config_value("term:fontsize", None)
+                 console.print(f"[green]{t('Reset terminal font size to default.')}[/green]")
+            else:
+                 try:
+                     val = int(new_val_str)
+                     cm.set_config_value("term:fontsize", val)
+                     console.print(f"[green]{t('Updated terminal font size.')}[/green]")
+                 except ValueError:
+                     console.print(f"[red]{t('Invalid integer.')}[/red]")
 
         elif choice == "scrollback":
             curr = settings.get("term:scrollback", -1)
