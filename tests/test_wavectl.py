@@ -5,7 +5,11 @@ from pathlib import Path
 from wavectl.config_manager import ConfigManager
 from wavectl.ai import add_ai_mode
 from unittest.mock import patch
-from tests.schema_validators import ConfigValidator
+import sys
+import os
+# Fix import path for schema_validators
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from schema_validators import ConfigValidator
 
 def test_config_manager_creation(tmp_path):
     # Setup mock config dir
@@ -68,8 +72,9 @@ def test_add_ai_mode_openai(mock_confirm, mock_password, mock_text, mock_select,
     # 5. Secret Input -> "sk-test-key"
     # 6. Icon -> "brain"
     # 7. Thinking -> "medium" (value)
-    # 8. Key -> "my-openai"
-    # 9. Confirm Default -> True
+    # 8. Max Tokens -> "" (empty)
+    # 9. Key -> "my-openai"
+    # 10. Confirm Default -> True
 
     # 1. Select Provider & Thinking
     mock_select.return_value.ask.side_effect = ["openai", "medium"]
@@ -79,6 +84,7 @@ def test_add_ai_mode_openai(mock_confirm, mock_password, mock_text, mock_select,
         "My OpenAI", # Display Name
         "gpt-5.1",   # Model
         "brain",     # Icon
+        "",          # Max Tokens
         "my-openai"  # Key
     ]
 
@@ -108,13 +114,6 @@ def test_add_ai_mode_openai(mock_confirm, mock_password, mock_text, mock_select,
     assert data["ai:model"] == "gpt-5.1"
     assert data["display:icon"] == "brain"
     assert data["ai:thinkinglevel"] == "medium"
-    # Note: Secret is not stored in waveai.json for openai, it's just set via wsh secret set command printed to user.
-    # But for 'custom' it might be different. OpenAI uses standard env var or secret key.
-    # verify logic:
-    # if provider == "openai": ...
-    # console.print ... wsh secret set ...
-    # mode_data["ai:provider"] = "openai"
-    # mode_data["ai:model"] = model
 
     # Validate against schema
     simulation_waveai = {key: data}
