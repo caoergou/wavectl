@@ -174,8 +174,8 @@ def add_ai_mode():
     model = ""
 
     if provider == "openai":
-        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-5.2").ask()
-        model = questionary.text(t("Enter Model Name:"), default="gpt-5.2").ask()
+        display_name = questionary.text(t("Enter Display Name:"), default="OpenAI GPT-5.1").ask()
+        model = questionary.text(t("Enter Model Name:"), default="gpt-5.1").ask()
 
         mode_data["ai:provider"] = "openai"
         mode_data["ai:model"] = model
@@ -192,7 +192,7 @@ def add_ai_mode():
 
     elif provider == "openrouter":
         display_name = questionary.text(t("Enter Display Name:"), default="OpenRouter").ask()
-        model = questionary.text(t("Enter Model Name (e.g. anthropic/claude-sonnet-4.5):"), default="anthropic/claude-sonnet-4.5").ask()
+        model = questionary.text(t("Enter Model Name (e.g. anthropic/claude-sonnet-4.5):"), default="anthropic/claude-3.5-sonnet").ask()
 
         mode_data["ai:provider"] = "openrouter"
         mode_data["ai:model"] = model
@@ -341,6 +341,15 @@ def add_ai_mode():
     ).ask()
     if thinking != "none":
         mode_data["ai:thinkinglevel"] = thinking
+
+    # Max Tokens
+    max_tokens_str = questionary.text(t("Enter Max Tokens (int, 0/empty for default):"), default="").ask()
+    if max_tokens_str.strip() and max_tokens_str.strip() != "0":
+         try:
+             val = int(max_tokens_str)
+             mode_data["ai:maxtokens"] = val
+         except ValueError:
+             console.print(f"[red]{t('Invalid integer.')}[/red]")
 
     # Generate Key
     # Sanitize display name for key

@@ -237,6 +237,14 @@ TRANSLATIONS = {
         "Language updated.": "语言已更新。",
         "None": "无",
         "Default": "默认",
+        "Enter Max Tokens (int, 0/empty for default):": "输入最大 Token 数 (整数，0/留空为默认)：",
+        "Updated max tokens.": "已更新最大 Token 数。",
+        "Terminal Font Size": "终端字体大小",
+        "Enter Terminal Font Size (int, 0/empty to default):": "输入终端字体大小 (整数，0/留空为默认)：",
+        "Updated terminal font size.": "已更新终端字体大小。",
+        "Terminal Font Family": "终端字体族",
+        "Enter Terminal Font Family (empty to default):": "输入终端字体族 (留空为默认)：",
+        "Updated terminal font family.": "已更新终端字体族。",
     }
 }
 
